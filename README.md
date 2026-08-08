@@ -1,65 +1,90 @@
-# HR Management System (HRMS) 
+# Human Resource Management System (HRMS) Portal
 
-A university-level Database Management Systems (DBMS) project. This repository features a scalable relational database backend implemented in **Oracle SQL** and a responsive web application frontend built with **HTML5, CSS3, and Bootstrap 5**.
+A university-level Database Management Systems (DBMS) project. This repository features a relational database backend designed according to **3rd Normal Form (3NF)** principles and a dynamic web application frontend built with **PHP, MySQL, and Bootstrap 5**.
 
 ---
 
 ## 🛠️ Technology Stack
-- **Database Backend:** Oracle SQL
-- **User Interface Frontend:** HTML5, CSS3, Bootstrap 5
-- **Design Philosophy:** 3rd Normal Form (3NF) relational constraints for high scalability and zero redundancy.
+
+* **Database Engine:** MySQL 8.0+ (3NF Relational Architecture)
+* **Backend Application:** PHP 8.x
+* **Frontend UI:** HTML5, CSS3, Bootstrap 5
+* **Authentication:** Session-based RBAC with BCRYPT password encryption
 
 ---
 
-## 📊 Database Schema Design
-The core architecture consists of **5 normalized tables** with strict primary-key and foreign-key integrity constraints.
+## 🔑 Default Credentials & Access Roles
 
-### 1. DEPARTMENTS
-Stores corporate organizational structural details.
-- `dept_id` (NUMBER, Primary Key)
-- `dept_name` (VARCHAR2(100), NOT NULL, UNIQUE)
+All initial seed accounts are populated automatically upon first launch.
 
-### 2. JOBS
-Defines positions, corporate titles, and standardized salary bands.
-- `job_id` (VARCHAR2(10), Primary Key)
-- `job_title` (VARCHAR2(100), NOT NULL)
-- `min_salary` (NUMBER(10,2))
-- `max_salary` (NUMBER(10,2))
+| Role | Email | Password | Access Privileges |
+| :--- | :--- | :--- | :--- |
+| **System Admin** | `admin@hrms.com` | `123456` | User management, full CRUD, restore & hard delete soft-deleted items |
+| **Department Manager** | `dept@hrms.com` | `123456` | Department & Employee management, soft-deletion |
+| **Employee Staff** | `staff@hrms.com` | `123456` | View attendance logs and individual records |
 
-### 3. EMPLOYEES
-The master directory table containing all staff profiles.
-- `emp_id` (NUMBER, Primary Key)
-- `first_name` (VARCHAR2(50), NOT NULL)
-- `last_name` (VARCHAR2(50), NOT NULL)
-- `email` (VARCHAR2(100), NOT NULL, UNIQUE)
+*(Interactive quick-fill login buttons are available on `login.php` for rapid testing).*
+
+---
+
+## 📊 Database Schema Design (3NF)
+
+The database schema is designed in 3rd Normal Form to eliminate redundancy and maintain strict referential integrity through Foreign Keys.
+
+### 1. `users`
+System login accounts and access roles.
+- `id` (INT, Primary Key, AUTO_INCREMENT)
+- `name` (VARCHAR(100), NOT NULL)
+- `email` (VARCHAR(100), NOT NULL, UNIQUE)
+- `password` (VARCHAR(255), NOT NULL) — BCRYPT Hashed
+- `role` (ENUM('Admin','Department','Employee'), Default 'Employee')
+- `created_at` (TIMESTAMP)
+
+### 2. `departments`
+Organizational structure details.
+- `id` (INT, Primary Key, AUTO_INCREMENT)
+- `dept_name` (VARCHAR(100), NOT NULL, UNIQUE)
+- `is_deleted` (TINYINT(1), Default 0) — Soft-delete flag
+- `created_at` (TIMESTAMP)
+
+### 3. `employees`
+Master directory table for staff profiles.
+- `id` (INT, Primary Key, AUTO_INCREMENT)
+- `first_name` (VARCHAR(50), NOT NULL)
+- `last_name` (VARCHAR(50), NOT NULL)
+- `email` (VARCHAR(100), NOT NULL, UNIQUE)
+- `salary` (DECIMAL(10,2), NOT NULL, Default 0.00)
+- `dept_id` (INT, Foreign Key ➡️ `departments.id` ON DELETE CASCADE)
 - `hire_date` (DATE, NOT NULL)
-- `dept_id` (NUMBER, Foreign Key ➡️ DEPARTMENTS)
-- `job_id` (VARCHAR2(10), Foreign Key ➡️ JOBS)
+- `is_deleted` (TINYINT(1), Default 0) — Soft-delete flag
 
-### 4. SALARY_HISTORY
-Tracks payroll tracking records over time for auditing.
-- `history_id` (NUMBER, Primary Key)
-- `emp_id` (NUMBER, Foreign Key ➡️ EMPLOYEES)
-- `current_salary` (NUMBER(10,2), NOT NULL)
-- `effective_date` (DATE, NOT NULL)
-
-### 5. ATTENDANCE_LOGS
-Tracks administrative operational records for clocking metrics.
-- `log_id` (NUMBER, Primary Key)
-- `emp_id` (NUMBER, Foreign Key ➡️ EMPLOYEES)
+### 4. `attendance_logs`
+Operational daily clocking metrics.
+- `id` (INT, Primary Key, AUTO_INCREMENT)
+- `emp_id` (INT, Foreign Key ➡️ `employees.id` ON DELETE CASCADE)
 - `log_date` (DATE, NOT NULL)
-- `status` (VARCHAR2(20), CHECK constraint for: 'Present', 'Absent', 'Leave')
+- `log_time` (TIME, NOT NULL)
+- `status` (ENUM('Present','Absent','Leave'), Default 'Present')
+- `is_deleted` (TINYINT(1), Default 0) — Soft-delete flag
 
 ---
 
-## 🎨 Frontend UI Plan (Bootstrap 5)
-- **Dashboard:** Features visual summary layout structures with numeric data totals powered by Bootstrap `.card` layouts.
-- **Data Forms:** Interactive entry components with consistent formatting relying on `.form-control` and responsive structural grid wrappers.
-- **Records Directories:** Fully responsive information arrays designed through contextual class utilities including `.table`, `.table-striped`, and `.table-hover`.
+## 📁 Project Structure
 
----
-
-## 🚀 Scalability Blueprint (Future Proof)
-The system is intentionally modular to enable future expansion paths without refactoring existing schemas. Supplementary modules can be attached seamlessly by appending tables with appropriate relationship mapping rules:
-1. **Leave Allocation Module:** Connect a secondary table (e.g., `LEAVE_REQUESTS`) via `emp_id`.
-2. **Performance Evaluation Tracking:** Connect a secondary table for tracking periodic feedback scores via `emp_id`.
+```text
+hrms-project/
+│
+├── config/
+│   └── db.php           # Database connection & zero-config auto-migrator
+│
+├── includes/
+│   ├── header.php       # Shared navigation header & setup checks
+│   └── footer.php       # Shared footer layout
+│
+├── index.php            # Main dashboard with card statistics
+├── login.php            # Login portal with quick-fill demo buttons
+├── logout.php           # Session cleanup & logout handler
+├── users.php            # System Admin user account management
+├── departments.php      # Department management & soft-delete controls
+├── employees.php        # Employee directory & profile registration
+└── attendance.php       # Attendance tracker and daily logs
