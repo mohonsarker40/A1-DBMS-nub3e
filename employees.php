@@ -18,6 +18,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("sssdis", $first_name, $last_name, $email, $salary, $dept_id, $hire_date);
         $stmt->execute();
         $msg = "Employee registered successfully!";
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'edit') {
+        $id         = (int)$_POST['id'];
+        $first_name = trim($_POST['first_name']);
+        $last_name  = trim($_POST['last_name']);
+        $email      = trim($_POST['email']);
+        $salary     = (float)$_POST['salary'];
+        $dept_id    = (int)$_POST['dept_id'];
+        $hire_date  = $_POST['hire_date'];
+
+        $stmt = $conn->prepare("UPDATE employees SET first_name = ?, last_name = ?, email = ?, salary = ?, dept_id = ?, hire_date = ? WHERE id = ?");
+        $stmt->bind_param("sssdisi", $first_name, $last_name, $email, $salary, $dept_id, $hire_date, $id);
+        $stmt->execute();
+        $msg = "Employee record updated successfully!";
     } elseif (isset($_POST['action']) && $_POST['action'] === 'soft_delete') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("UPDATE employees SET is_deleted = 1 WHERE id = ?");
@@ -39,7 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Fetch active departments for Add & Edit forms
 $departments = $conn->query("SELECT * FROM departments WHERE is_deleted = 0");
+$dept_list = [];
+while ($d = $departments->fetch_assoc()) {
+    $dept_list[] = $d;
+}
 
 // Role-based visibility logic
 if ($role === 'Admin') {
@@ -80,9 +98,9 @@ if ($role === 'Admin') {
                         <label class="form-label">Department</label>
                         <select name="dept_id" class="form-select" required>
                             <option value="">Select Dept</option>
-                            <?php while ($d = $departments->fetch_assoc()): ?>
+                            <?php foreach ($dept_list as $d): ?>
                                 <option value="<?= $d['id'] ?>"><?= htmlspecialchars($d['dept_name']) ?></option>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -118,6 +136,21 @@ if ($role === 'Admin') {
                             <td>$<?= number_format($e['salary'], 2) ?></td>
                             <td>
                                 <?php if (!$e['is_deleted']): ?>
+                                    <!-- Edit Button (Triggers Modal) -->
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-primary edit-btn" 
+                                            data-id="<?= $e['id'] ?>"
+                                            data-fname="<?= htmlspecialchars($e['first_name'], ENT_QUOTES) ?>"
+                                            data-lname="<?= htmlspecialchars($e['last_name'], ENT_QUOTES) ?>"
+                                            data-email="<?= htmlspecialchars($e['email'], ENT_QUOTES) ?>"
+                                            data-salary="<?= $e['salary'] ?>"
+                                            data-dept="<?= $e['dept_id'] ?>"
+                                            data-hire="<?= $e['hire_date'] ?>"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editEmployeeModal">
+                                        Edit
+                                    </button>
+
                                     <form method="POST" style="display:inline;">
                                         <input type="hidden" name="action" value="soft_delete">
                                         <input type="hidden" name="id" value="<?= $e['id'] ?>">
@@ -146,5 +179,76 @@ if ($role === 'Admin') {
         </div>
     </div>
 </div>
+
+<!-- Edit Employee Modal -->
+<div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="editEmployeeModalLabel">Edit Employee Record</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="id" id="edit_emp_id">
+                    
+                    <div class="mb-2">
+                        <label class="form-label">First Name</label>
+                        <input type="text" name="first_name" id="edit_first_name" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" name="last_name" id="edit_last_name" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Email</label>
+                        <input type="email" name="email" id="edit_email" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Salary</label>
+                        <input type="number" step="0.01" name="salary" id="edit_salary" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Department</label>
+                        <select name="dept_id" id="edit_dept_id" class="form-select" required>
+                            <option value="">Select Dept</option>
+                            <?php foreach ($dept_list as $d): ?>
+                                <option value="<?= $d['id'] ?>"><?= htmlspecialchars($d['dept_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Hire Date</label>
+                        <input type="date" name="hire_date" id="edit_hire_date" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript to populate Employee Modal Data -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const editButtons = document.querySelectorAll('.edit-btn');
+
+    editButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            document.getElementById('edit_emp_id').value     = this.getAttribute('data-id');
+            document.getElementById('edit_first_name').value = this.getAttribute('data-fname');
+            document.getElementById('edit_last_name').value  = this.getAttribute('data-lname');
+            document.getElementById('edit_email').value      = this.getAttribute('data-email');
+            document.getElementById('edit_salary').value     = this.getAttribute('data-salary');
+            document.getElementById('edit_dept_id').value    = this.getAttribute('data-dept');
+            document.getElementById('edit_hire_date').value  = this.getAttribute('data-hire');
+        });
+    });
+});
+</script>
 
 <?php include_once 'includes/footer.php'; ?>

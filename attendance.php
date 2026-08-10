@@ -15,12 +15,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("isss", $emp_id, $log_date, $log_time, $status);
         $stmt->execute();
         $msg = "Attendance logged successfully!";
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'edit') {
+        $id       = (int)$_POST['id'];
+        $emp_id   = (int)$_POST['emp_id'];
+        $log_date = $_POST['log_date'];
+        $log_time = $_POST['log_time'];
+        $status   = $_POST['status'];
+
+        $stmt = $conn->prepare("UPDATE attendance_logs SET emp_id = ?, log_date = ?, log_time = ?, status = ? WHERE id = ?");
+        $stmt->bind_param("isssi", $emp_id, $log_date, $log_time, $status, $id);
+        $stmt->execute();
+        $msg = "Attendance log updated successfully!";
     } elseif (isset($_POST['action']) && $_POST['action'] === 'delete') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("UPDATE attendance_logs SET is_deleted = 1 WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $msg = "Attendance deleted!";
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'restore' && $role === 'Admin') {
+        $id = (int)$_POST['id'];
+        $stmt = $conn->prepare("UPDATE attendance_logs SET is_deleted = 0 WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $msg = "Attendance log restored successfully!";
     } elseif (isset($_POST['action']) && $_POST['action'] === 'hard_delete' && $role === 'Admin') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("DELETE FROM attendance_logs WHERE id = ?");
@@ -30,10 +47,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
+// Fetch active employees for Add & Edit dropdowns
 $employees = $conn->query("SELECT id, first_name, last_name FROM employees WHERE is_deleted = 0");
+$emp_list = [];
+while ($emp = $employees->fetch_assoc()) {
+    $emp_list[] = $emp;
+}
 
 if ($role === 'Admin') {
-    $logs = $conn->query("SELECT a.*, e.first_name, e.last_name FROM attendance_logs a JOIN employees e ON a.emp_id = e.id ORDER BY a.log_date DESC, a.log_time DESC");
+    $logs = $conn->query("SELECT a.*, e.first_name, e.last_name FROM attendance_logs a JOIN employees e ON a.emp_id = e.id ORDER BY a.is_deleted ASC, a.log_date DESC, a.log_time DESC");
 } else {
     $logs = $conn->query("SELECT a.*, e.first_name, e.last_name FROM attendance_logs a JOIN employees e ON a.emp_id = e.id WHERE a.is_deleted = 0 ORDER BY a.log_date DESC, a.log_time DESC");
 }
@@ -56,9 +78,9 @@ include_once 'includes/header.php';
                         <label class="form-label">Employee</label>
                         <select name="emp_id" class="form-select" required>
                             <option value="">Select Employee</option>
-                            <?php while ($emp = $employees->fetch_assoc()): ?>
+                            <?php foreach ($emp_list as $emp): ?>
                                 <option value="<?= $emp['id'] ?>"><?= htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']) ?></option>
-                            <?php endwhile; ?>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="mb-2">
@@ -111,10 +133,31 @@ include_once 'includes/header.php';
                             </td>
                             <td>
                                 <?php if (!$log['is_deleted']): ?>
+                                    <!-- Edit Button (Triggers Modal) -->
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-primary edit-btn" 
+                                            data-id="<?= $log['id'] ?>"
+                                            data-emp="<?= $log['emp_id'] ?>"
+                                            data-date="<?= $log['log_date'] ?>"
+                                            data-time="<?= $log['log_time'] ?>"
+                                            data-status="<?= $log['status'] ?>"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editAttendanceModal">
+                                        Edit
+                                    </button>
+
                                     <form method="POST" style="display:inline;">
                                         <input type="hidden" name="action" value="delete">
                                         <input type="hidden" name="id" value="<?= $log['id'] ?>">
-                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                        <button class="btn btn-sm btn-outline-warning">Delete</button>
+                                    </form>
+                                <?php endif; ?>
+
+                                <?php if ($role === 'Admin' && $log['is_deleted']): ?>
+                                    <form method="POST" style="display:inline;">
+                                        <input type="hidden" name="action" value="restore">
+                                        <input type="hidden" name="id" value="<?= $log['id'] ?>">
+                                        <button class="btn btn-sm btn-outline-success">Restore</button>
                                     </form>
                                 <?php endif; ?>
 
@@ -134,5 +177,70 @@ include_once 'includes/header.php';
         </div>
     </div>
 </div>
+
+<!-- Edit Attendance Modal -->
+<div class="modal fade" id="editAttendanceModal" tabindex="-1" aria-labelledby="editAttendanceModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="editAttendanceModalLabel">Edit Attendance Record</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="id" id="edit_log_id">
+                    
+                    <div class="mb-2">
+                        <label class="form-label">Employee</label>
+                        <select name="emp_id" id="edit_emp_id" class="form-select" required>
+                            <option value="">Select Employee</option>
+                            <?php foreach ($emp_list as $emp): ?>
+                                <option value="<?= $emp['id'] ?>"><?= htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Date</label>
+                        <input type="date" name="log_date" id="edit_log_date" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Time</label>
+                        <input type="time" name="log_time" id="edit_log_time" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <select name="status" id="edit_status" class="form-select" required>
+                            <option value="Present">Present</option>
+                            <option value="Absent">Absent</option>
+                            <option value="Leave">Leave</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Log</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript to populate Attendance Modal Data -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const editButtons = document.querySelectorAll('.edit-btn');
+
+    editButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            document.getElementById('edit_log_id').value   = this.getAttribute('data-id');
+            document.getElementById('edit_emp_id').value   = this.getAttribute('data-emp');
+            document.getElementById('edit_log_date').value = this.getAttribute('data-date');
+            document.getElementById('edit_log_time').value = this.getAttribute('data-time');
+            document.getElementById('edit_status').value   = this.getAttribute('data-status');
+        });
+    });
+});
+</script>
 
 <?php include_once 'includes/footer.php'; ?>

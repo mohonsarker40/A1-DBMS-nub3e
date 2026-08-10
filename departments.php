@@ -14,6 +14,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->execute();
             $msg = "Department added successfully!";
         }
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'edit') {
+        $id = (int)$_POST['id'];
+        $name = trim($_POST['dept_name']);
+        if (!empty($name)) {
+            $stmt = $conn->prepare("UPDATE departments SET dept_name = ? WHERE id = ?");
+            $stmt->bind_param("si", $name, $id);
+            $stmt->execute();
+            $msg = "Department updated successfully!";
+        }
     } elseif (isset($_POST['action']) && $_POST['action'] === 'soft_delete') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("UPDATE departments SET is_deleted = 1 WHERE id = ?");
@@ -91,6 +100,16 @@ if ($role === 'Admin') {
                             </td>
                             <td>
                                 <?php if (!$row['is_deleted']): ?>
+                                    <!-- Edit Button (Triggers Modal) -->
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-primary edit-btn" 
+                                            data-id="<?= $row['id'] ?>" 
+                                            data-name="<?= htmlspecialchars($row['dept_name'], ENT_QUOTES) ?>" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editModal">
+                                        Edit
+                                    </button>
+
                                     <form method="POST" style="display:inline;">
                                         <input type="hidden" name="action" value="soft_delete">
                                         <input type="hidden" name="id" value="<?= $row['id'] ?>">
@@ -119,5 +138,50 @@ if ($role === 'Admin') {
         </div>
     </div>
 </div>
+
+<!-- Edit Department Modal -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="editModalLabel">Edit Department</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <input type="hidden" name="action" value="edit">
+                    <input type="hidden" name="id" id="edit_id">
+                    <div class="mb-3">
+                        <label class="form-label">Department Name</label>
+                        <input type="text" name="dept_name" id="edit_dept_name" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript to populate Modal Data -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const editButtons = document.querySelectorAll('.edit-btn');
+    const editIdInput = document.getElementById('edit_id');
+    const editNameInput = document.getElementById('edit_dept_name');
+
+    editButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            const id = this.getAttribute('data-id');
+            const name = this.getAttribute('data-name');
+
+            editIdInput.value = id;
+            editNameInput.value = name;
+        });
+    });
+});
+</script>
 
 <?php include_once 'includes/footer.php'; ?>
