@@ -236,7 +236,7 @@ if ($role === 'Admin') {
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const editButtons = document.querySelectorAll('.edit-btn');
-
+    
     editButtons.forEach(button => {
         button.addEventListener('click', function () {
             document.getElementById('edit_emp_id').value     = this.getAttribute('data-id');
