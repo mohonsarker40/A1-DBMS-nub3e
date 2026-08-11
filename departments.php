@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt->bind_param("s", $name);
             $stmt->execute();
             $msg = "Department added successfully!";
-        }
+        } 
     } elseif (isset($_POST['action']) && $_POST['action'] === 'edit') {
         $id = (int)$_POST['id'];
         $name = trim($_POST['dept_name']);
