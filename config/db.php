@@ -9,7 +9,7 @@ $conn = new mysqli($host, $user, $pass, $db);
 if ($conn->connect_error) {
     die("<div style='color:red; font-family:sans-serif; padding:20px;'><b>Database Connection Error:</b> " . $conn->connect_error . "</div>");
 }
-
+ 
 // Auto-Setup: Check if 'users' table exists
 $tableCheck = $conn->query("SHOW TABLES LIKE 'users'");
 
