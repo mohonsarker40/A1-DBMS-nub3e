@@ -8,7 +8,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'add') {
         $emp_id   = (int)$_POST['emp_id'];
         $log_date = $_POST['log_date'];
-        $log_time = $_POST['log_time'];
+        $log_time = $_POST['log_time']; 
         $status   = $_POST['status'];
 
         $stmt = $conn->prepare("INSERT INTO attendance_logs (emp_id, log_date, log_time, status) VALUES (?, ?, ?, ?)");
