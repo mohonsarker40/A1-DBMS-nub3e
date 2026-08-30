@@ -279,7 +279,7 @@ include_once 'includes/header.php';
 
                     <div class="mb-3">
                         <label class="form-label"><?= $at['label_time'] ?></label>
-                        <input type="time" name="log_time" value="16:16" class="form-control" required>
+                        <input type="time" name="log_time" value="<?= date('H:i') ?>" class="form-control" required>
                     </div>
 
                     <div class="mb-4">
