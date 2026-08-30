@@ -6,6 +6,69 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $role = $_SESSION['user_role'] ?? 'Employee';
+$lang = $_SESSION['lang'] ?? 'en';
+
+// Page Level Translation Dictionary
+$dept_trans = [
+    'en' => [
+        'msg_added'         => 'Department added successfully!',
+        'msg_updated'       => 'Department updated successfully!',
+        'msg_deleted'       => 'Department deleted!',
+        'msg_restored'      => 'Department restored successfully!',
+        'msg_perm_deleted'  => 'Department permanently deleted from database!',
+        'title_add'         => 'Add Department',
+        'title_directory'   => 'Department Directory',
+        'label_name'        => 'Department Name',
+        'placeholder_name'  => 'e.g. Finance or IT',
+        'btn_save'          => 'Save Department',
+        'btn_edit'          => 'Edit',
+        'btn_delete'        => 'Delete',
+        'btn_restore'       => 'Restore',
+        'btn_perm_delete'   => 'Permanent Delete',
+        'btn_update'        => 'Update',
+        'btn_cancel'        => 'Cancel',
+        'th_id'             => 'ID',
+        'th_name'           => 'Department Name',
+        'th_status'         => 'Status',
+        'th_action'         => 'Action',
+        'status_deleted'    => 'Deleted',
+        'status_active'     => 'Active',
+        'no_depts'          => 'No departments found.',
+        'modal_title'       => 'Edit Department',
+        'confirm_trash'     => 'Move this department to trash?',
+        'confirm_perm'      => 'Are you sure you want to PERMANENTLY delete this department? This cannot be undone!'
+    ],
+    'bn' => [
+        'msg_added'         => 'ডিপার্টমেন্ট সফলভাবে যোগ করা হয়েছে!',
+        'msg_updated'       => 'ডিপার্টমেন্ট সফলভাবে আপডেট করা হয়েছে!',
+        'msg_deleted'       => 'ডিপার্টমেন্ট মুছে ফেলা হয়েছে!',
+        'msg_restored'      => 'ডিপার্টমেন্ট সফলভাবে পুনরুদ্ধার করা হয়েছে!',
+        'msg_perm_deleted'  => 'ডেটাবেস থেকে ডিপার্টমেন্ট স্থায়ীভাবে মুছে ফেলা হয়েছে!',
+        'title_add'         => 'নতুন ডিপার্টমেন্ট যোগ করুন',
+        'title_directory'   => 'ডিপার্টমেন্ট ডিরেক্টরি',
+        'label_name'        => 'ডিপার্টমেন্টের নাম',
+        'placeholder_name'  => 'যেমন: অর্থ বা আইটি',
+        'btn_save'          => 'ডিপার্টমেন্ট সেভ করুন',
+        'btn_edit'          => 'সম্পাদনা',
+        'btn_delete'        => 'মুছুন',
+        'btn_restore'       => 'পুনরুদ্ধার',
+        'btn_perm_delete'   => 'স্থায়ীভাবে মুছুন',
+        'btn_update'        => 'আপডেট করুন',
+        'btn_cancel'        => 'বাতিল',
+        'th_id'             => 'আইডি',
+        'th_name'           => 'ডিপার্টমেন্টের নাম',
+        'th_status'         => 'স্ট্যাটাস',
+        'th_action'         => 'অ্যাকশন',
+        'status_deleted'    => 'মুছে ফেলা হয়েছে',
+        'status_active'     => 'সক্রিয়',
+        'no_depts'          => 'কোনো ডিপার্টমেন্ট পাওয়া যায়নি।',
+        'modal_title'       => 'ডিপার্টমেন্ট সংশোধন করুন',
+        'confirm_trash'     => 'আপনি কি এই ডিপার্টমেন্টকে ট্র্যাশে পাঠাতে চান?',
+        'confirm_perm'      => 'আপনি কি নিশ্চিতভাবে এই ডিপার্টমেন্টকে স্থায়ীভাবে মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না!'
+    ]
+];
+
+$dt = $dept_trans[$lang] ?? $dept_trans['en'];
 
 // Handle POST Requests with PRG (Post/Redirect/Get) Pattern
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -15,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $conn->prepare("INSERT INTO departments (dept_name) VALUES (?)");
             $stmt->bind_param("s", $name);
             $stmt->execute();
-            $_SESSION['flash_msg'] = "Department added successfully!";
+            $_SESSION['flash_msg'] = $dt['msg_added'];
         } 
     } elseif (isset($_POST['action']) && $_POST['action'] === 'edit') {
         $id = (int)$_POST['id'];
@@ -24,26 +87,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $conn->prepare("UPDATE departments SET dept_name = ? WHERE id = ?");
             $stmt->bind_param("si", $name, $id);
             $stmt->execute();
-            $_SESSION['flash_msg'] = "Department updated successfully!";
+            $_SESSION['flash_msg'] = $dt['msg_updated'];
         }
     } elseif (isset($_POST['action']) && $_POST['action'] === 'soft_delete') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("UPDATE departments SET is_deleted = 1 WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $_SESSION['flash_msg'] = "Department deleted!";
+        $_SESSION['flash_msg'] = $dt['msg_deleted'];
     } elseif (isset($_POST['action']) && $_POST['action'] === 'restore' && $role === 'Admin') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("UPDATE departments SET is_deleted = 0 WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $_SESSION['flash_msg'] = "Department restored successfully!";
+        $_SESSION['flash_msg'] = $dt['msg_restored'];
     } elseif (isset($_POST['action']) && $_POST['action'] === 'permanent_delete' && $role === 'Admin') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("DELETE FROM departments WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $_SESSION['flash_msg'] = "Department permanently deleted from database!";
+        $_SESSION['flash_msg'] = $dt['msg_perm_deleted'];
     }
 
     // Redirect to self to prevent form resubmission on page refresh
@@ -160,17 +223,17 @@ include_once 'includes/header.php';
     <div class="col-md-4">
         <div class="card bg-dark text-white border border-secondary border-opacity-25 shadow-sm rounded-3">
             <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 fw-bold text-white py-3">
-                <i class="fa-solid fa-building-user me-2 text-primary"></i>Add Department
+                <i class="fa-solid fa-building-user me-2 text-primary"></i><?= $dt['title_add'] ?>
             </div>
             <div class="card-body">
                 <form method="POST">
                     <input type="hidden" name="action" value="add">
                     <div class="mb-4">
-                        <label class="form-label">Department Name</label>
-                        <input type="text" name="dept_name" class="form-control" required placeholder="e.g. Finance or IT">
+                        <label class="form-label"><?= $dt['label_name'] ?></label>
+                        <input type="text" name="dept_name" class="form-control" required placeholder="<?= $dt['placeholder_name'] ?>">
                     </div>
                     <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
-                        <i class="fa-solid fa-plus me-1"></i> Save Department
+                        <i class="fa-solid fa-plus me-1"></i> <?= $dt['btn_save'] ?>
                     </button>
                 </form>
             </div>
@@ -181,29 +244,27 @@ include_once 'includes/header.php';
     <div class="col-md-8">
         <div class="card bg-dark text-white border border-secondary border-opacity-25 shadow-sm rounded-3 overflow-hidden">
             <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 fw-bold text-white py-3">
-                <i class="fa-solid fa-sitemap me-2 text-info"></i>Department Directory
+                <i class="fa-solid fa-sitemap me-2 text-info"></i><?= $dt['title_directory'] ?>
             </div>
             <div class="table-responsive">
                 <table class="table table-dark-custom align-middle">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Department Name</th>
-                            <th>Status</th>
-                            <th class="text-end">Action</th>
+                            <th><?= $dt['th_name'] ?></th>
+                            <th><?= $dt['th_status'] ?></th>
+                            <th class="text-end"><?= $dt['th_action'] ?></th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if ($departments && $departments->num_rows > 0): ?>
                             <?php while ($row = $departments->fetch_assoc()): ?>
                             <tr class="<?= $row['is_deleted'] ? 'opacity-50' : '' ?>">
-                                <td class="fw-bold text-secondary">#<?= $row['id'] ?></td>
                                 <td class="fw-semibold text-white"><?= htmlspecialchars($row['dept_name']) ?></td>
                                 <td>
                                     <?php if ($row['is_deleted']): ?>
-                                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 px-2 py-1">Deleted</span>
+                                        <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25 px-2 py-1"><?= $dt['status_deleted'] ?></span>
                                     <?php else: ?>
-                                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-2 py-1">Active</span>
+                                        <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 px-2 py-1"><?= $dt['status_active'] ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-end">
@@ -214,14 +275,14 @@ include_once 'includes/header.php';
                                                     class="btn btn-sm btn-outline-info edit-btn" 
                                                     data-id="<?= $row['id'] ?>" 
                                                     data-name="<?= htmlspecialchars($row['dept_name'], ENT_QUOTES) ?>">
-                                                Edit
+                                                <?= $dt['btn_edit'] ?>
                                             </button>
 
                                             <!-- Soft Delete -->
-                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Move this department to trash?');">
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('<?= $dt['confirm_trash'] ?>');">
                                                 <input type="hidden" name="action" value="soft_delete">
                                                 <input type="hidden" name="id" value="<?= $row['id'] ?>">
-                                                <button class="btn btn-sm btn-outline-warning">Delete</button>
+                                                <button class="btn btn-sm btn-outline-warning"><?= $dt['btn_delete'] ?></button>
                                             </form>
                                         <?php endif; ?>
 
@@ -230,14 +291,14 @@ include_once 'includes/header.php';
                                             <form method="POST" style="display:inline;">
                                                 <input type="hidden" name="action" value="restore">
                                                 <input type="hidden" name="id" value="<?= $row['id'] ?>">
-                                                <button class="btn btn-sm btn-outline-success">Restore</button>
+                                                <button class="btn btn-sm btn-outline-success"><?= $dt['btn_restore'] ?></button>
                                             </form>
 
                                             <!-- Permanent Delete (Purge) Option -->
-                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to PERMANENTLY delete this department? This cannot be undone!');">
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('<?= $dt['confirm_perm'] ?>');">
                                                 <input type="hidden" name="action" value="permanent_delete">
                                                 <input type="hidden" name="id" value="<?= $row['id'] ?>">
-                                                <button class="btn btn-sm btn-outline-danger">Permanent Delete</button>
+                                                <button class="btn btn-sm btn-outline-danger"><?= $dt['btn_perm_delete'] ?></button>
                                             </form>
                                         <?php endif; ?>
                                     </div>
@@ -246,7 +307,7 @@ include_once 'includes/header.php';
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="4" class="text-center py-4 text-secondary">No departments found.</td>
+                                <td colspan="4" class="text-center py-4 text-secondary"><?= $dt['no_depts'] ?></td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -262,7 +323,7 @@ include_once 'includes/header.php';
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title fw-bold text-white" id="editModalLabel">
-                    <i class="fa-solid fa-pen-to-square text-info me-2"></i>Edit Department
+                    <i class="fa-solid fa-pen-to-square text-info me-2"></i><?= $dt['modal_title'] ?>
                 </h5>
                 <button type="button" class="btn-close btn-close-white closeModal" aria-label="Close"></button>
             </div>
@@ -271,13 +332,13 @@ include_once 'includes/header.php';
                     <input type="hidden" name="action" value="edit">
                     <input type="hidden" name="id" id="edit_id">
                     <div class="mb-3">
-                        <label class="form-label">Department Name</label>
+                        <label class="form-label"><?= $dt['label_name'] ?></label>
                         <input type="text" name="dept_name" id="edit_dept_name" class="form-control" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm closeModal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-sm px-3">Update</button>
+                    <button type="button" class="btn btn-secondary btn-sm closeModal"><?= $dt['btn_cancel'] ?></button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3"><?= $dt['btn_update'] ?></button>
                 </div>
             </form>
         </div>

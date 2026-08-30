@@ -26,11 +26,45 @@ if (($dept_check == 0 || $emp_check == 0) && !in_array($current_page, ['departme
     }
 }
 
+// Language Switcher Logic
+if (isset($_GET['lang'])) {
+    $_SESSION['lang'] = ($_GET['lang'] === 'bn') ? 'bn' : 'en';
+}
+$lang = $_SESSION['lang'] ?? 'en';
+
+// Simple Localization Array
+$translations = [
+    'en' => [
+        'dashboard'    => 'Dashboard',
+        'manage_users' => 'Manage Users',
+        'departments'  => 'Departments',
+        'employees'    => 'Employees',
+        'attendance'   => 'Attendance',
+        'notifications'=> 'Notifications',
+        'mark_read'    => 'Mark all as read',
+        'system_live'  => 'System Live',
+        'new'          => 'NEW',
+    ],
+    'bn' => [
+        'dashboard'    => 'ড্যাশবোর্ড',
+        'manage_users' => 'ইউজার ব্যবস্থাপনা',
+        'departments'  => 'ডিপার্টমেন্টসমূহ',
+        'employees'    => 'কর্মচারীবৃন্দ',
+        'attendance'   => 'উপস্থিতি',
+        'notifications'=> 'নোটিফিকেশন',
+        'mark_read'    => 'সব পড়া হয়েছে চিহ্নিত করুন',
+        'system_live'  => 'সিস্টেম সচল',
+        'new'          => 'নতুন',
+    ]
+];
+
+$t = $translations[$lang];
+
 $role = $_SESSION['user_role'] ?? 'Employee';
 $name = $_SESSION['user_name'] ?? 'User';
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= $lang ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,7 +74,7 @@ $name = $_SESSION['user_name'] ?? 'User';
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&family=Tiro+Bangla&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -53,7 +87,7 @@ $name = $_SESSION['user_name'] ?? 'User';
         }
 
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
+            font-family: 'Plus Jakarta Sans', 'Tiro Bangla', sans-serif;
             background-color: var(--dark-bg);
             color: #ffffff;
             min-height: 100vh;
@@ -201,14 +235,17 @@ $name = $_SESSION['user_name'] ?? 'User';
             text-transform: uppercase;
         }
 
-        /* Notification Styling */
-        .notification-dropdown {
-            width: 320px;
+        /* Custom Topbar Dropdowns */
+        .topbar-dropdown-menu {
             background: rgba(18, 20, 29, 0.95) !important;
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1) !important;
             border-radius: 14px !important;
             box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6) !important;
+        }
+
+        .notification-dropdown {
+            width: 320px;
             padding: 0;
             overflow: hidden;
         }
@@ -289,14 +326,14 @@ $name = $_SESSION['user_name'] ?? 'User';
         <ul class="sidebar-menu">
             <li>
                 <a href="index.php" class="sidebar-link <?= $current_page == 'index.php' ? 'active' : '' ?>">
-                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                    <i class="fa-solid fa-chart-pie"></i> <?= $t['dashboard'] ?>
                 </a>
             </li>
 
             <?php if ($role === 'Admin'): ?>
             <li>
                 <a href="users.php" class="sidebar-link <?= $current_page == 'users.php' ? 'active' : '' ?>">
-                    <i class="fa-solid fa-user-gear text-warning"></i> Manage Users
+                    <i class="fa-solid fa-user-gear text-warning"></i> <?= $t['manage_users'] ?>
                 </a>
             </li>
             <?php endif; ?>
@@ -304,19 +341,19 @@ $name = $_SESSION['user_name'] ?? 'User';
             <?php if ($role === 'Admin' || $role === 'Department'): ?>
             <li>
                 <a href="departments.php" class="sidebar-link <?= $current_page == 'departments.php' ? 'active' : '' ?>">
-                    <i class="fa-solid fa-sitemap"></i> Departments
+                    <i class="fa-solid fa-sitemap"></i> <?= $t['departments'] ?>
                 </a>
             </li>
             <li>
                 <a href="employees.php" class="sidebar-link <?= $current_page == 'employees.php' ? 'active' : '' ?>">
-                    <i class="fa-solid fa-users"></i> Employees
+                    <i class="fa-solid fa-users"></i> <?= $t['employees'] ?>
                 </a>
             </li>
             <?php endif; ?>
 
             <li>
                 <a href="attendance.php" class="sidebar-link <?= $current_page == 'attendance.php' ? 'active' : '' ?>">
-                    <i class="fa-solid fa-clipboard-user"></i> Attendance
+                    <i class="fa-solid fa-clipboard-user"></i> <?= $t['attendance'] ?>
                 </a>
             </li>
         </ul>
@@ -335,7 +372,7 @@ $name = $_SESSION['user_name'] ?? 'User';
 
     <!-- MAIN CONTENT AREA -->
     <main class="main-content">
-        <!-- Top Navbar with Mobile Toggle & Notification -->
+        <!-- Top Navbar with Language Switcher & Notification -->
         <div class="top-navbar d-flex align-items-center justify-content-between mb-4">
             <button class="btn btn-dark d-lg-none border-secondary" type="button" id="sidebarToggle">
                 <i class="fa-solid fa-bars"></i>
@@ -343,6 +380,29 @@ $name = $_SESSION['user_name'] ?? 'User';
 
             <div class="ms-auto d-flex align-items-center gap-3">
                 
+                <!-- LANGUAGE SWITCHER DROPDOWN -->
+                <div class="dropdown">
+                    <button class="btn btn-dark border-secondary border-opacity-25 rounded-3 px-3 py-2 d-flex align-items-center gap-2 small" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background: rgba(255,255,255,0.05);">
+                        <i class="fa-solid fa-globe text-secondary"></i>
+                        <span class="fw-bold text-white"><?= $lang === 'bn' ? 'বাংলা' : 'English' ?></span>
+                        <i class="fa-solid fa-chevron-down text-secondary" style="font-size: 0.75rem;"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end topbar-dropdown-menu mt-2 p-1">
+                        <li>
+                            <a class="dropdown-menu-item dropdown-item rounded-2 text-white small d-flex align-items-center justify-content-between py-2 <?= $lang === 'en' ? 'active bg-danger bg-opacity-25' : '' ?>" href="?lang=en">
+                                <span>English</span>
+                                <?php if ($lang === 'en'): ?><i class="fa-solid fa-check text-danger small"></i><?php endif; ?>
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-menu-item dropdown-item rounded-2 text-white small d-flex align-items-center justify-content-between py-2 <?= $lang === 'bn' ? 'active bg-danger bg-opacity-25' : '' ?>" href="?lang=bn">
+                                <span>বাংলা</span>
+                                <?php if ($lang === 'bn'): ?><i class="fa-solid fa-check text-danger small"></i><?php endif; ?>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
                 <!-- NOTIFICATION DROPDOWN -->
                 <div class="dropdown">
                     <button class="btn btn-dark position-relative border-0 rounded-circle p-2" type="button" id="notificationMenu" data-bs-toggle="dropdown" aria-expanded="false" style="background: rgba(255,255,255,0.05); width: 42px; height: 42px;">
@@ -350,10 +410,10 @@ $name = $_SESSION['user_name'] ?? 'User';
                         <span class="notification-badge-pulse"></span>
                     </button>
 
-                    <div class="dropdown-menu dropdown-menu-end notification-dropdown mt-2" aria-labelledby="notificationMenu">
+                    <div class="dropdown-menu dropdown-menu-end topbar-dropdown-menu notification-dropdown mt-2" aria-labelledby="notificationMenu">
                         <div class="notification-header d-flex justify-content-between align-items-center">
-                            <span class="fw-bold text-white small">Notifications</span>
-                            <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25" style="font-size: 0.65rem;">3 NEW</span>
+                            <span class="fw-bold text-white small"><?= $t['notifications'] ?></span>
+                            <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-25" style="font-size: 0.65rem;">3 <?= $t['new'] ?></span>
                         </div>
 
                         <div class="notification-list" style="max-height: 280px; overflow-y: auto;">
@@ -392,7 +452,7 @@ $name = $_SESSION['user_name'] ?? 'User';
                         </div>
 
                         <div class="p-2 text-center border-top border-secondary border-opacity-10 bg-black bg-opacity-20">
-                            <a href="#" class="text-danger small text-decoration-none fw-bold" style="font-size: 0.75rem;">Mark all as read</a>
+                            <a href="#" class="text-danger small text-decoration-none fw-bold" style="font-size: 0.75rem;"><?= $t['mark_read'] ?></a>
                         </div>
                     </div>
                 </div>
@@ -400,8 +460,21 @@ $name = $_SESSION['user_name'] ?? 'User';
                 <!-- Status Indicator -->
                 <div class="d-none d-sm-flex align-items-center gap-2 bg-dark bg-opacity-50 px-3 py-2 rounded-3 border border-secondary border-opacity-10">
                     <i class="fa-solid fa-circle text-success" style="font-size: 8px;"></i>
-                    <span class="text-secondary small" style="font-size: 0.75rem;">System Live</span>
+                    <span class="text-secondary small" style="font-size: 0.75rem;"><?= $t['system_live'] ?></span>
                 </div>
 
             </div>
         </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const sidebar = document.getElementById('sidebar');
+
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('show');
+        });
+    }
+});
+</script>

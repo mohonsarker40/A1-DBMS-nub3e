@@ -6,6 +6,79 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $role = $_SESSION['user_role'] ?? 'Employee';
+$lang = $_SESSION['lang'] ?? 'en';
+
+// Page Level Translation Dictionary
+$emp_trans = [
+    'en' => [
+        'msg_added'         => 'Employee registered successfully!',
+        'msg_updated'       => 'Employee record updated successfully!',
+        'msg_deleted'       => 'Employee deleted!',
+        'msg_restored'      => 'Employee restored successfully!',
+        'msg_perm_deleted'  => 'Employee permanently deleted!',
+        'title_add'         => 'Add Employee',
+        'title_records'     => 'Employee Records',
+        'label_fname'       => 'First Name',
+        'label_lname'       => 'Last Name',
+        'label_email'       => 'Email',
+        'label_salary'      => 'Salary',
+        'label_dept'        => 'Department',
+        'label_hire_date'   => 'Hire Date',
+        'select_dept'       => '-- Select Dept --',
+        'btn_register'      => 'Register Employee',
+        'btn_edit'          => 'Edit',
+        'btn_delete'        => 'Delete',
+        'btn_restore'       => 'Restore',
+        'btn_perm_delete'   => 'Permanent Delete',
+        'btn_update'        => 'Update Record',
+        'btn_cancel'        => 'Cancel',
+        'th_name'           => 'Name',
+        'th_email'          => 'Email',
+        'th_dept'           => 'Dept',
+        'th_salary'         => 'Salary',
+        'th_action'         => 'Action',
+        'badge_deleted'     => 'Deleted',
+        'no_records'        => 'No employee records found.',
+        'modal_title'       => 'Edit Employee Record',
+        'confirm_trash'     => 'Move this employee to trash?',
+        'confirm_perm'      => 'Are you sure you want to PERMANENTLY delete this employee record? This action cannot be undone!'
+    ],
+    'bn' => [
+        'msg_added'         => 'কর্মচারী সফলভাবে নিবন্ধিত হয়েছে!',
+        'msg_updated'       => 'কর্মচারীর তথ্য সফলভাবে আপডেট করা হয়েছে!',
+        'msg_deleted'       => 'কর্মচারী মুছে ফেলা হয়েছে!',
+        'msg_restored'      => 'কর্মচারী সফলভাবে পুনরুদ্ধার করা হয়েছে!',
+        'msg_perm_deleted'  => 'কর্মচারী স্থায়ীভাবে মুছে ফেলা হয়েছে!',
+        'title_add'         => 'নতুন কর্মচারী যোগ করুন',
+        'title_records'     => 'কর্মচারীদের তালিকা',
+        'label_fname'       => 'প্রথম নাম',
+        'label_lname'       => 'শেষ নাম',
+        'label_email'       => 'ইমেইল',
+        'label_salary'      => 'বেতন',
+        'label_dept'        => 'ডিপার্টমেন্ট',
+        'label_hire_date'   => 'যোগদানের তারিখ',
+        'select_dept'       => '-- ডিপার্টমেন্ট নির্বাচন করুন --',
+        'btn_register'      => 'কর্মচারী নিবন্ধন করুন',
+        'btn_edit'          => 'সম্পাদনা',
+        'btn_delete'        => 'মুছুন',
+        'btn_restore'       => 'পুনরুদ্ধার',
+        'btn_perm_delete'   => 'স্থায়ীভাবে মুছুন',
+        'btn_update'        => 'রেকর্ড আপডেট করুন',
+        'btn_cancel'        => 'বাতিল',
+        'th_name'           => 'নাম',
+        'th_email'          => 'ইমেইল',
+        'th_dept'           => 'ডিপার্টমেন্ট',
+        'th_salary'         => 'বেতন',
+        'th_action'         => 'অ্যাকশন',
+        'badge_deleted'     => 'মুছে ফেলা হয়েছে',
+        'no_records'        => 'কোনো কর্মচারীর রেকর্ড পাওয়া যায়নি।',
+        'modal_title'       => 'কর্মচারীর তথ্য সংশোধন করুন',
+        'confirm_trash'     => 'আপনি কি এই কর্মচারীকে ট্র্যাশে পাঠাতে চান?',
+        'confirm_perm'      => 'আপনি কি নিশ্চিতভাবে এই কর্মচারীর তথ্য স্থায়ীভাবে মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না!'
+    ]
+];
+
+$et = $emp_trans[$lang] ?? $emp_trans['en'];
 
 // Handle POST Requests with PRG Pattern
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -20,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $conn->prepare("INSERT INTO employees (first_name, last_name, email, salary, dept_id, hire_date) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("sssdis", $first_name, $last_name, $email, $salary, $dept_id, $hire_date);
         $stmt->execute();
-        $_SESSION['flash_msg'] = "Employee registered successfully!";
+        $_SESSION['flash_msg'] = $et['msg_added'];
 
     } elseif (isset($_POST['action']) && $_POST['action'] === 'edit') {
         $id         = (int)$_POST['id'];
@@ -34,28 +107,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $conn->prepare("UPDATE employees SET first_name = ?, last_name = ?, email = ?, salary = ?, dept_id = ?, hire_date = ? WHERE id = ?");
         $stmt->bind_param("sssdisi", $first_name, $last_name, $email, $salary, $dept_id, $hire_date, $id);
         $stmt->execute();
-        $_SESSION['flash_msg'] = "Employee record updated successfully!";
+        $_SESSION['flash_msg'] = $et['msg_updated'];
 
     } elseif (isset($_POST['action']) && $_POST['action'] === 'soft_delete') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("UPDATE employees SET is_deleted = 1 WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $_SESSION['flash_msg'] = "Employee deleted!";
+        $_SESSION['flash_msg'] = $et['msg_deleted'];
 
     } elseif (isset($_POST['action']) && $_POST['action'] === 'restore' && $role === 'Admin') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("UPDATE employees SET is_deleted = 0 WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $_SESSION['flash_msg'] = "Employee restored successfully!";
+        $_SESSION['flash_msg'] = $et['msg_restored'];
 
     } elseif (isset($_POST['action']) && $_POST['action'] === 'permanent_delete' && $role === 'Admin') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("DELETE FROM employees WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $_SESSION['flash_msg'] = "Employee permanently deleted!";
+        $_SESSION['flash_msg'] = $et['msg_perm_deleted'];
     }
 
     // Redirect to self to prevent form resubmission
@@ -183,7 +256,7 @@ include_once 'includes/header.php';
     <div class="col-md-4">
         <div class="card bg-dark text-white border border-secondary border-opacity-25 shadow-sm rounded-3">
             <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 fw-bold text-white py-3">
-                <i class="fa-solid fa-user-plus me-2 text-primary"></i>Add Employee
+                <i class="fa-solid fa-user-plus me-2 text-primary"></i><?= $et['title_add'] ?>
             </div>
             <div class="card-body">
                 <form method="POST">
@@ -191,29 +264,29 @@ include_once 'includes/header.php';
                     
                     <div class="row g-2 mb-2">
                         <div class="col-6">
-                            <label class="form-label">First Name</label>
+                            <label class="form-label"><?= $et['label_fname'] ?></label>
                             <input type="text" name="first_name" class="form-control" required placeholder="John">
                         </div>
                         <div class="col-6">
-                            <label class="form-label">Last Name</label>
+                            <label class="form-label"><?= $et['label_lname'] ?></label>
                             <input type="text" name="last_name" class="form-control" required placeholder="Doe">
                         </div>
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label">Email</label>
+                        <label class="form-label"><?= $et['label_email'] ?></label>
                         <input type="email" name="email" class="form-control" required placeholder="john@example.com">
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label">Salary</label>
+                        <label class="form-label"><?= $et['label_salary'] ?></label>
                         <input type="number" step="0.01" name="salary" class="form-control" required placeholder="50000">
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label">Department</label>
+                        <label class="form-label"><?= $et['label_dept'] ?></label>
                         <select name="dept_id" class="form-select" required>
-                            <option value="">-- Select Dept --</option>
+                            <option value=""><?= $et['select_dept'] ?></option>
                             <?php foreach ($dept_list as $d): ?>
                                 <option value="<?= $d['id'] ?>"><?= htmlspecialchars($d['dept_name']) ?></option>
                             <?php endforeach; ?>
@@ -221,12 +294,12 @@ include_once 'includes/header.php';
                     </div>
 
                     <div class="mb-4">
-                        <label class="form-label">Hire Date</label>
+                        <label class="form-label"><?= $et['label_hire_date'] ?></label>
                         <input type="date" name="hire_date" value="<?= date('Y-m-d') ?>" class="form-control" required>
                     </div>
 
                     <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
-                        <i class="fa-solid fa-check me-1"></i> Register Employee
+                        <i class="fa-solid fa-check me-1"></i> <?= $et['btn_register'] ?>
                     </button>
                 </form>
             </div>
@@ -237,17 +310,17 @@ include_once 'includes/header.php';
     <div class="col-md-8">
         <div class="card bg-dark text-white border border-secondary border-opacity-25 shadow-sm rounded-3 overflow-hidden">
             <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 fw-bold text-white py-3">
-                <i class="fa-solid fa-users me-2 text-info"></i>Employee Records
+                <i class="fa-solid fa-users me-2 text-info"></i><?= $et['title_records'] ?>
             </div>
             <div class="table-responsive">
                 <table class="table table-dark-custom align-middle">
                     <thead>
                         <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Dept</th>
-                            <th>Salary</th>
-                            <th class="text-end">Action</th>
+                            <th><?= $et['th_name'] ?></th>
+                            <th><?= $et['th_email'] ?></th>
+                            <th><?= $et['th_dept'] ?></th>
+                            <th><?= $et['th_salary'] ?></th>
+                            <th class="text-end"><?= $et['th_action'] ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -257,7 +330,7 @@ include_once 'includes/header.php';
                                 <td class="fw-semibold text-white">
                                     <?= htmlspecialchars($e['first_name'] . ' ' . $e['last_name']) ?>
                                     <?php if ($e['is_deleted']): ?>
-                                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Deleted</span>
+                                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;"><?= $et['badge_deleted'] ?></span>
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-secondary"><?= htmlspecialchars($e['email']) ?></td>
@@ -280,14 +353,14 @@ include_once 'includes/header.php';
                                                     data-salary="<?= $e['salary'] ?>"
                                                     data-dept="<?= $e['dept_id'] ?>"
                                                     data-hire="<?= $e['hire_date'] ?>">
-                                                Edit
+                                                <?= $et['btn_edit'] ?>
                                             </button>
 
                                             <!-- Soft Delete Form -->
-                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Move this employee to trash?');">
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('<?= $et['confirm_trash'] ?>');">
                                                 <input type="hidden" name="action" value="soft_delete">
                                                 <input type="hidden" name="id" value="<?= $e['id'] ?>">
-                                                <button class="btn btn-sm btn-outline-warning">Delete</button>
+                                                <button class="btn btn-sm btn-outline-warning"><?= $et['btn_delete'] ?></button>
                                             </form>
                                         <?php endif; ?>
 
@@ -296,14 +369,14 @@ include_once 'includes/header.php';
                                             <form method="POST" style="display:inline;">
                                                 <input type="hidden" name="action" value="restore">
                                                 <input type="hidden" name="id" value="<?= $e['id'] ?>">
-                                                <button class="btn btn-sm btn-outline-success">Restore</button>
+                                                <button class="btn btn-sm btn-outline-success"><?= $et['btn_restore'] ?></button>
                                             </form>
 
                                             <!-- Permanent Delete (Purge) Form -->
-                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to PERMANENTLY delete this employee record? This action cannot be undone!');">
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('<?= $et['confirm_perm'] ?>');">
                                                 <input type="hidden" name="action" value="permanent_delete">
                                                 <input type="hidden" name="id" value="<?= $e['id'] ?>">
-                                                <button class="btn btn-sm btn-outline-danger">Permanent Delete</button>
+                                                <button class="btn btn-sm btn-outline-danger"><?= $et['btn_perm_delete'] ?></button>
                                             </form>
                                         <?php endif; ?>
                                     </div>
@@ -312,7 +385,7 @@ include_once 'includes/header.php';
                             <?php endwhile; ?>
                         <?php else: ?>
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-secondary">No employee records found.</td>
+                                <td colspan="5" class="text-center py-4 text-secondary"><?= $et['no_records'] ?></td>
                             </tr>
                         <?php endif; ?>
                     </tbody>
@@ -328,7 +401,7 @@ include_once 'includes/header.php';
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title fw-bold text-white" id="editEmployeeModalLabel">
-                    <i class="fa-solid fa-user-pen text-info me-2"></i>Edit Employee Record
+                    <i class="fa-solid fa-user-pen text-info me-2"></i><?= $et['modal_title'] ?>
                 </h5>
                 <button type="button" class="btn-close btn-close-white closeModal" aria-label="Close"></button>
             </div>
@@ -339,29 +412,29 @@ include_once 'includes/header.php';
                     
                     <div class="row g-2 mb-2">
                         <div class="col-6">
-                            <label class="form-label">First Name</label>
+                            <label class="form-label"><?= $et['label_fname'] ?></label>
                             <input type="text" name="first_name" id="edit_first_name" class="form-control" required>
                         </div>
                         <div class="col-6">
-                            <label class="form-label">Last Name</label>
+                            <label class="form-label"><?= $et['label_lname'] ?></label>
                             <input type="text" name="last_name" id="edit_last_name" class="form-control" required>
                         </div>
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label">Email</label>
+                        <label class="form-label"><?= $et['label_email'] ?></label>
                         <input type="email" name="email" id="edit_email" class="form-control" required>
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label">Salary</label>
+                        <label class="form-label"><?= $et['label_salary'] ?></label>
                         <input type="number" step="0.01" name="salary" id="edit_salary" class="form-control" required>
                     </div>
 
                     <div class="mb-2">
-                        <label class="form-label">Department</label>
+                        <label class="form-label"><?= $et['label_dept'] ?></label>
                         <select name="dept_id" id="edit_dept_id" class="form-select" required>
-                            <option value="">Select Dept</option>
+                            <option value=""><?= $et['select_dept'] ?></option>
                             <?php foreach ($dept_list as $d): ?>
                                 <option value="<?= $d['id'] ?>"><?= htmlspecialchars($d['dept_name']) ?></option>
                             <?php endforeach; ?>
@@ -369,13 +442,13 @@ include_once 'includes/header.php';
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">Hire Date</label>
+                        <label class="form-label"><?= $et['label_hire_date'] ?></label>
                         <input type="date" name="hire_date" id="edit_hire_date" class="form-control" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm closeModal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-sm px-3">Update Record</button>
+                    <button type="button" class="btn btn-secondary btn-sm closeModal"><?= $et['btn_cancel'] ?></button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3"><?= $et['btn_update'] ?></button>
                 </div>
             </form>
         </div>
