@@ -45,6 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $_SESSION['flash_msg'] = "Attendance log restored successfully!";
+
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'permanent_delete' && $role === 'Admin') {
+        $id = (int)$_POST['id'];
+        $stmt = $conn->prepare("DELETE FROM attendance_logs WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $_SESSION['flash_msg'] = "Attendance log permanently deleted!";
     }
 
     header("Location: attendance.php");
@@ -116,48 +123,48 @@ include_once 'includes/header.php';
         border-color: rgba(255, 255, 255, 0.1) !important;
     }
 
-/* Table Styling & Remove White Hover Effect */
-.table-dark-custom {
-    color: #ffffff !important;
-    margin-bottom: 0;
-    background-color: transparent !important;
-}
+    /* Table Styling & Remove White Hover Effect */
+    .table-dark-custom {
+        color: #ffffff !important;
+        margin-bottom: 0;
+        background-color: transparent !important;
+    }
 
-.table-dark-custom th {
-    background: rgba(255, 255, 255, 0.05) !important;
-    color: #94a3b8 !important;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
-    padding: 12px 16px;
-}
+    .table-dark-custom th {
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: #94a3b8 !important;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        padding: 12px 16px;
+    }
 
-.table-dark-custom td {
-    background-color: transparent !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
-    padding: 12px 16px;
-    vertical-align: middle;
-    color: #ffffff !important;
-}
+    .table-dark-custom td {
+        background-color: transparent !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 12px 16px;
+        vertical-align: middle;
+        color: #ffffff !important;
+    }
 
-/* Remove Bootstrap Default White Hover Completely */
-.table-dark-custom tbody tr,
-.table-dark-custom tbody tr:hover,
-.table-dark-custom tbody tr td,
-.table-dark-custom tbody tr:hover td {
-    background-color: transparent !important;
-    background: transparent !important;
-    color: #ffffff !important;
-    --bs-table-accent-bg: transparent !important;
-    --bs-table-hover-bg: transparent !important;
-    --bs-table-bg: transparent !important;
-}
+    /* Remove Bootstrap Default White Hover Completely */
+    .table-dark-custom tbody tr,
+    .table-dark-custom tbody tr:hover,
+    .table-dark-custom tbody tr td,
+    .table-dark-custom tbody tr:hover td {
+        background-color: transparent !important;
+        background: transparent !important;
+        color: #ffffff !important;
+        --bs-table-accent-bg: transparent !important;
+        --bs-table-hover-bg: transparent !important;
+        --bs-table-bg: transparent !important;
+    }
 
-/* Light subtile hover effect for better UI (Optional) */
-.table-dark-custom tbody tr:hover td {
-    background-color: rgba(255, 255, 255, 0.03) !important;
-}
+    /* Light subtile hover effect for better UI (Optional) */
+    .table-dark-custom tbody tr:hover td {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+    }
 </style>
 
 <!-- Alert Message -->
@@ -233,7 +240,7 @@ include_once 'includes/header.php';
                         </tr>
                     </thead>
                     <tbody>
-                        <?php if ($logs->num_rows > 0): ?>
+                        <?php if ($logs && $logs->num_rows > 0): ?>
                             <?php while ($log = $logs->fetch_assoc()): ?>
                             <tr class="<?= $log['is_deleted'] ? 'opacity-50' : '' ?>">
                                 <td>
@@ -271,7 +278,7 @@ include_once 'includes/header.php';
                                             </button>
 
                                             <!-- Soft Delete Form -->
-                                            <form method="POST" style="display:inline;">
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Move this log to trash?');">
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="id" value="<?= $log['id'] ?>">
                                                 <button class="btn btn-sm btn-outline-warning">Delete</button>
@@ -284,6 +291,13 @@ include_once 'includes/header.php';
                                                 <input type="hidden" name="action" value="restore">
                                                 <input type="hidden" name="id" value="<?= $log['id'] ?>">
                                                 <button class="btn btn-sm btn-outline-success">Restore</button>
+                                            </form>
+
+                                            <!-- Permanent Delete (Purge) Form -->
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to PERMANENTLY delete this attendance log? This action cannot be undone!');">
+                                                <input type="hidden" name="action" value="permanent_delete">
+                                                <input type="hidden" name="id" value="<?= $log['id'] ?>">
+                                                <button class="btn btn-sm btn-outline-danger">Permanent Delete</button>
                                             </form>
                                         <?php endif; ?>
                                     </div>

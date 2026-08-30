@@ -20,13 +20,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $password  = password_hash(trim($_POST['password']), PASSWORD_BCRYPT);
         $user_role = $_POST['role'];
 
-        $stmt = $conn->prepare("INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)");
+        $stmt = $conn->prepare("INSERT INTO users (name, email, password, role, is_deleted) VALUES (?, ?, ?, ?, 0)");
         $stmt->bind_param("ssss", $name, $email, $password, $user_role);
         
         if ($stmt->execute()) {
             $_SESSION['flash_msg'] = "New account ($user_role) created successfully!";
         } else {
-            $_SESSION['flash_error'] = "Error: Email might already exist.";
+            $_SESSION['flash_error'] = "Error adding user: Email might already exist or DB query failed.";
         }
 
     } elseif (isset($_POST['action']) && $_POST['action'] === 'edit_user') {
@@ -36,7 +36,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user_role = $_POST['role'];
         $password  = trim($_POST['password']);
 
-        // Check if password field is filled
         if (!empty($password)) {
             $hashed_password = password_hash($password, PASSWORD_BCRYPT);
             $stmt = $conn->prepare("UPDATE users SET name = ?, email = ?, role = ?, password = ? WHERE id = ?");
@@ -47,7 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         if ($stmt->execute()) {
-            // Update session if editing own account
             if ($id === (int)$_SESSION['user_id']) {
                 $_SESSION['user_role'] = $user_role;
             }
@@ -56,7 +54,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['flash_error'] = "Error updating user account.";
         }
 
-    } elseif (isset($_POST['action']) && $_POST['action'] === 'delete_user') {
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'soft_delete') {
+        $id = (int)$_POST['id'];
+        if ($id === (int)$_SESSION['user_id']) {
+            $_SESSION['flash_error'] = "You cannot delete your own active Admin account!";
+        } else {
+            $stmt = $conn->prepare("UPDATE users SET is_deleted = 1 WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $_SESSION['flash_msg'] = "User account moved to trash (soft deleted).";
+        }
+
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'restore_user') {
+        $id = (int)$_POST['id'];
+        $stmt = $conn->prepare("UPDATE users SET is_deleted = 0 WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $_SESSION['flash_msg'] = "User account restored successfully!";
+
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'permanent_delete') {
         $id = (int)$_POST['id'];
         if ($id === (int)$_SESSION['user_id']) {
             $_SESSION['flash_error'] = "You cannot delete your own active Admin account!";
@@ -64,11 +80,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $stmt = $conn->prepare("DELETE FROM users WHERE id = ?");
             $stmt->bind_param("i", $id);
             $stmt->execute();
-            $_SESSION['flash_msg'] = "User account removed!";
+            $_SESSION['flash_msg'] = "User account permanently deleted!";
         }
     }
 
-    // Redirect to self to prevent form resubmission on page refresh
     header("Location: users.php");
     exit;
 }
@@ -78,8 +93,8 @@ $msg = $_SESSION['flash_msg'] ?? '';
 $error = $_SESSION['flash_error'] ?? '';
 unset($_SESSION['flash_msg'], $_SESSION['flash_error']);
 
-// Fetch All Users
-$users = $conn->query("SELECT id, name, email, role, created_at FROM users ORDER BY id DESC");
+// Fetch All Users (Sorted: Active first, then Soft-Deleted)
+$users = $conn->query("SELECT id, name, email, role, created_at, is_deleted FROM users ORDER BY is_deleted ASC, id DESC");
 
 include_once 'includes/header.php';
 ?>
@@ -108,12 +123,10 @@ include_once 'includes/header.php';
         color: #cbd5e1;
     }
 
-    /* Force Remove Backdrop overlay issue */
     .modal-backdrop {
         display: none !important;
     }
 
-    /* Modal Styling with Built-in Dimmed Background */
     .modal {
         background: rgba(0, 0, 0, 0.75) !important;
     }
@@ -128,7 +141,6 @@ include_once 'includes/header.php';
         border-color: rgba(255, 255, 255, 0.1) !important;
     }
 
-    /* Custom Dark Table Styles */
     .table-dark-custom {
         color: #ffffff !important;
         margin-bottom: 0;
@@ -151,7 +163,6 @@ include_once 'includes/header.php';
         color: #ffffff !important;
     }
 
-    /* Turn Off White Hover Completely */
     .table-dark-custom tbody tr,
     .table-dark-custom tbody tr:hover,
     .table-dark-custom tbody tr td,
@@ -164,7 +175,6 @@ include_once 'includes/header.php';
         --bs-table-bg: transparent !important;
     }
 
-    /* Subtile Smooth Hover */
     .table-dark-custom tbody tr:hover td {
         background-color: rgba(255, 255, 255, 0.03) !important;
     }
@@ -248,8 +258,13 @@ include_once 'includes/header.php';
                     <tbody>
                         <?php if ($users && $users->num_rows > 0): ?>
                             <?php while ($u = $users->fetch_assoc()): ?>
-                            <tr>
-                                <td class="fw-semibold text-white"><?= htmlspecialchars($u['name']) ?></td>
+                            <tr class="<?= $u['is_deleted'] ? 'opacity-50' : '' ?>">
+                                <td class="fw-semibold text-white">
+                                    <?= htmlspecialchars($u['name']) ?>
+                                    <?php if ($u['is_deleted']): ?>
+                                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Deleted</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td class="text-secondary"><?= htmlspecialchars($u['email']) ?></td>
                                 <td>
                                     <?php if ($u['role'] === 'Admin'): ?>
@@ -263,25 +278,42 @@ include_once 'includes/header.php';
                                 <td><small class="text-secondary"><i class="fa-regular fa-calendar me-1"></i><?= date('d M, Y', strtotime($u['created_at'])) ?></small></td>
                                 <td class="text-end">
                                     <div class="d-inline-flex gap-1">
-                                        <!-- Edit Button -->
-                                        <button type="button" 
-                                                class="btn btn-sm btn-outline-info edit-user-btn"
-                                                data-id="<?= $u['id'] ?>"
-                                                data-name="<?= htmlspecialchars($u['name'], ENT_QUOTES) ?>"
-                                                data-email="<?= htmlspecialchars($u['email'], ENT_QUOTES) ?>"
-                                                data-role="<?= $u['role'] ?>">
-                                            Edit
-                                        </button>
+                                        <?php if (!$u['is_deleted']): ?>
+                                            <!-- Edit Button -->
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-info edit-user-btn"
+                                                    data-id="<?= $u['id'] ?>"
+                                                    data-name="<?= htmlspecialchars($u['name'], ENT_QUOTES) ?>"
+                                                    data-email="<?= htmlspecialchars($u['email'], ENT_QUOTES) ?>"
+                                                    data-role="<?= $u['role'] ?>">
+                                                Edit
+                                            </button>
 
-                                        <?php if ((int)$u['id'] !== (int)$_SESSION['user_id']): ?>
-                                            <!-- Delete Form -->
-                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this user account?');">
-                                                <input type="hidden" name="action" value="delete_user">
-                                                <input type="hidden" name="id" value="<?= $u['id'] ?>">
-                                                <button class="btn btn-sm btn-outline-warning">Delete</button>
-                                            </form>
+                                            <?php if ((int)$u['id'] !== (int)$_SESSION['user_id']): ?>
+                                                <!-- Soft Delete Form -->
+                                                <form method="POST" style="display:inline;" onsubmit="return confirm('Move this user to trash?');">
+                                                    <input type="hidden" name="action" value="soft_delete">
+                                                    <input type="hidden" name="id" value="<?= $u['id'] ?>">
+                                                    <button class="btn btn-sm btn-outline-warning">Delete</button>
+                                                </form>
+                                            <?php else: ?>
+                                                <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25 px-2 py-1 align-self-center">(You)</span>
+                                            <?php endif; ?>
+
                                         <?php else: ?>
-                                            <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-25 px-2 py-1 align-self-center">(You)</span>
+                                            <!-- Restore Form -->
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="action" value="restore_user">
+                                                <input type="hidden" name="id" value="<?= $u['id'] ?>">
+                                                <button class="btn btn-sm btn-outline-success">Restore</button>
+                                            </form>
+
+                                            <!-- Permanent Delete Form -->
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Permanently delete this user?');">
+                                                <input type="hidden" name="action" value="permanent_delete">
+                                                <input type="hidden" name="id" value="<?= $u['id'] ?>">
+                                                <button class="btn btn-sm btn-outline-danger">Permanent Delete</button>
+                                            </form>
                                         <?php endif; ?>
                                     </div>
                                 </td>
@@ -347,7 +379,6 @@ include_once 'includes/header.php';
     </div>
 </div>
 
-<!-- Standalone JavaScript Modal Handler -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const modalEl = document.getElementById('editUserModal');
@@ -364,7 +395,6 @@ document.addEventListener('DOMContentLoaded', function () {
         document.body.style.overflow = 'auto';
     }
 
-    // Populate and open Modal
     const editBtns = document.querySelectorAll('.edit-user-btn');
     editBtns.forEach(btn => {
         btn.addEventListener('click', function () {
@@ -377,13 +407,11 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Close Modal via Cancel or Cross 'X' Button
     const closeBtns = document.querySelectorAll('.closeModal');
     closeBtns.forEach(btn => {
         btn.addEventListener('click', hideModal);
     });
 
-    // Close Modal when clicking backdrop area
     window.addEventListener('click', function (e) {
         if (e.target === modalEl) {
             hideModal();

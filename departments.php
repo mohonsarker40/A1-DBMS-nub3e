@@ -38,6 +38,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $_SESSION['flash_msg'] = "Department restored successfully!";
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'permanent_delete' && $role === 'Admin') {
+        $id = (int)$_POST['id'];
+        $stmt = $conn->prepare("DELETE FROM departments WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $_SESSION['flash_msg'] = "Department permanently deleted from database!";
     }
 
     // Redirect to self to prevent form resubmission on page refresh
@@ -212,7 +218,7 @@ include_once 'includes/header.php';
                                             </button>
 
                                             <!-- Soft Delete -->
-                                            <form method="POST" style="display:inline;">
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Move this department to trash?');">
                                                 <input type="hidden" name="action" value="soft_delete">
                                                 <input type="hidden" name="id" value="<?= $row['id'] ?>">
                                                 <button class="btn btn-sm btn-outline-warning">Delete</button>
@@ -225,6 +231,13 @@ include_once 'includes/header.php';
                                                 <input type="hidden" name="action" value="restore">
                                                 <input type="hidden" name="id" value="<?= $row['id'] ?>">
                                                 <button class="btn btn-sm btn-outline-success">Restore</button>
+                                            </form>
+
+                                            <!-- Permanent Delete (Purge) Option -->
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to PERMANENTLY delete this department? This cannot be undone!');">
+                                                <input type="hidden" name="action" value="permanent_delete">
+                                                <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                                                <button class="btn btn-sm btn-outline-danger">Permanent Delete</button>
                                             </form>
                                         <?php endif; ?>
                                     </div>

@@ -49,6 +49,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $_SESSION['flash_msg'] = "Employee restored successfully!";
+
+    } elseif (isset($_POST['action']) && $_POST['action'] === 'permanent_delete' && $role === 'Admin') {
+        $id = (int)$_POST['id'];
+        $stmt = $conn->prepare("DELETE FROM employees WHERE id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $_SESSION['flash_msg'] = "Employee permanently deleted!";
     }
 
     // Redirect to self to prevent form resubmission
@@ -249,6 +256,9 @@ include_once 'includes/header.php';
                             <tr class="<?= $e['is_deleted'] ? 'opacity-50' : '' ?>">
                                 <td class="fw-semibold text-white">
                                     <?= htmlspecialchars($e['first_name'] . ' ' . $e['last_name']) ?>
+                                    <?php if ($e['is_deleted']): ?>
+                                        <span class="badge bg-warning text-dark ms-1" style="font-size: 0.65rem;">Deleted</span>
+                                    <?php endif; ?>
                                 </td>
                                 <td class="text-secondary"><?= htmlspecialchars($e['email']) ?></td>
                                 <td>
@@ -274,7 +284,7 @@ include_once 'includes/header.php';
                                             </button>
 
                                             <!-- Soft Delete Form -->
-                                            <form method="POST" style="display:inline;">
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Move this employee to trash?');">
                                                 <input type="hidden" name="action" value="soft_delete">
                                                 <input type="hidden" name="id" value="<?= $e['id'] ?>">
                                                 <button class="btn btn-sm btn-outline-warning">Delete</button>
@@ -287,6 +297,13 @@ include_once 'includes/header.php';
                                                 <input type="hidden" name="action" value="restore">
                                                 <input type="hidden" name="id" value="<?= $e['id'] ?>">
                                                 <button class="btn btn-sm btn-outline-success">Restore</button>
+                                            </form>
+
+                                            <!-- Permanent Delete (Purge) Form -->
+                                            <form method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to PERMANENTLY delete this employee record? This action cannot be undone!');">
+                                                <input type="hidden" name="action" value="permanent_delete">
+                                                <input type="hidden" name="id" value="<?= $e['id'] ?>">
+                                                <button class="btn btn-sm btn-outline-danger">Permanent Delete</button>
                                             </form>
                                         <?php endif; ?>
                                     </div>

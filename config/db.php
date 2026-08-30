@@ -56,6 +56,7 @@ if ($tableCheck && $tableCheck->num_rows === 0) {
       `name` VARCHAR(100) NOT NULL,
       `email` VARCHAR(100) NOT NULL,
       `password` VARCHAR(255) NOT NULL,
+       `is_deleted` TINYINT(1) DEFAULT '0',
       `role` ENUM('Admin','Department','Employee') NOT NULL DEFAULT 'Employee',
       `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (`id`),
@@ -67,10 +68,10 @@ if ($tableCheck && $tableCheck->num_rows === 0) {
     INSERT INTO `employees` (`id`, `first_name`, `last_name`, `email`, `salary`, `dept_id`, `hire_date`, `is_deleted`) VALUES
     (1, 'John', 'Doe', 'john@hrms.com', 50000.00, 1, CURDATE(), 0);
 
-    INSERT INTO `users` (`id`, `name`, `email`, `password`, `role`) VALUES
-    (1, 'System Admin', 'admin@hrms.com', '$2y$10$wN1Q/X/YvO.dI1vC.E7S2.k.P5jR2Q7u6aX6yG2.J5Q2R2Q7u6aX6', 'Admin'),
-    (2, 'Dept Manager', 'dept@hrms.com', '$2y$10$wN1Q/X/YvO.dI1vC.E7S2.k.P5jR2Q7u6aX6yG2.J5Q2R2Q7u6aX6', 'Department'),
-    (3, 'John Staff', 'staff@hrms.com', '$2y$10$wN1Q/X/YvO.dI1vC.E7S2.k.P5jR2Q7u6aX6yG2.J5Q2R2Q7u6aX6', 'Employee');
+    INSERT INTO `users` (`id`, `name`, `email`, `password`, `is_deleted`, `role`) VALUES
+    (1, 'System Admin', 'admin@hrms.com', '$2y$10$wN1Q/X/YvO.dI1vC.E7S2.k.P5jR2Q7u6aX6yG2.J5Q2R2Q7u6aX6', 0, 'Admin'),
+    (2, 'Dept Manager', 'dept@hrms.com', '$2y$10$wN1Q/X/YvO.dI1vC.E7S2.k.P5jR2Q7u6aX6yG2.J5Q2R2Q7u6aX6', 0, 'Department'),
+    (3, 'John Staff', 'staff@hrms.com', '$2y$10$wN1Q/X/YvO.dI1vC.E7S2.k.P5jR2Q7u6aX6yG2.J5Q2R2Q7u6aX6', 0, 'Employee');
     ";
 
     // Execute multi-query setup
