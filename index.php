@@ -12,24 +12,6 @@ $present_count = $conn->query("SELECT COUNT(*) AS total FROM attendance_logs WHE
 $absent_count  = $conn->query("SELECT COUNT(*) AS total FROM attendance_logs WHERE log_date = '$today' AND status = 'Absent' AND is_deleted = 0")->fetch_assoc()['total'] ?? 0;
 $leave_count   = $conn->query("SELECT COUNT(*) AS total FROM attendance_logs WHERE log_date = '$today' AND status = 'Leave' AND is_deleted = 0")->fetch_assoc()['total'] ?? 0;
 
-// Fetch Recent Attendance Logs (Latest 5 records for Today)
-$recent_logs = $conn->query("
-    SELECT a.*, e.name AS emp_name, d.dept_name 
-    FROM attendance_logs a 
-    JOIN employees e ON a.employee_id = e.id 
-    LEFT JOIN departments d ON e.department_id = d.id 
-    WHERE a.log_date = '$today' AND a.is_deleted = 0 
-    ORDER BY a.id DESC LIMIT 5
-");
-
-// Fetch Department Wise Employee Distribution
-$dept_stats = $conn->query("
-    SELECT d.dept_name, COUNT(e.id) AS emp_count 
-    FROM departments d 
-    LEFT JOIN employees e ON d.id = e.department_id AND e.is_deleted = 0 
-    WHERE d.is_deleted = 0 
-    GROUP BY d.id LIMIT 4
-");
 
 // Dashboard specific translations
 $dash_translations = [

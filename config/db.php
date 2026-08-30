@@ -1,7 +1,7 @@
 <?php
-$host = "192.168.11.105";
-$user = "user1";
-$pass = "tmssict123"; // Change to "" if your local MySQL has no password
+$host = "localhost";
+$user = "root";
+$pass = "root"; // Change to "" if your local MySQL has no password
 $db   = "hrms_db";
 
 $conn = new mysqli($host, $user, $pass, $db);
