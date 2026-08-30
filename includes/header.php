@@ -44,6 +44,7 @@ $translations = [
         'mark_read'    => 'Mark all as read',
         'system_live'  => 'System Live',
         'new'          => 'NEW',
+        'search_ph'    => 'Search anything...',
     ],
     'bn' => [
         'dashboard'    => 'ড্যাশবোর্ড',
@@ -52,9 +53,10 @@ $translations = [
         'employees'    => 'কর্মচারীবৃন্দ',
         'attendance'   => 'উপস্থিতি',
         'notifications'=> 'নোটিফিকেশন',
-        'mark_read'    => 'সব পড়া হয়েছে চিহ্নিত করুন',
+        'mark_read'    => 'সব পড়া হয়েছে চিহ্নিত করুন',
         'system_live'  => 'সিস্টেম সচল',
         'new'          => 'নতুন',
+        'search_ph'    => 'যেকোনো কিছু খুঁজুন...',
     ]
 ];
 
@@ -74,7 +76,7 @@ $name = $_SESSION['user_name'] ?? 'User';
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&family=Tiro+Bangla&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&family=Tiro+Bangla&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -235,6 +237,48 @@ $name = $_SESSION['user_name'] ?? 'User';
             text-transform: uppercase;
         }
 
+        /* Search Bar Box Styling */
+        .topbar-search-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 6px 14px;
+            width: 280px;
+            transition: all 0.3s ease;
+        }
+        .topbar-search-box:focus-within {
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 12px rgba(255, 0, 85, 0.25);
+            background: rgba(255, 255, 255, 0.08);
+            width: 320px;
+        }
+        .topbar-search-box input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            outline: none;
+            font-size: 0.85rem;
+            width: 100%;
+        }
+
+        /* Digital Live Clock Widget */
+        .topbar-clock {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 6px 14px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: #a1a1aa;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .topbar-clock #liveClock {
+            color: #38bdf8;
+            font-weight: 700;
+        }
+
         /* Custom Topbar Dropdowns */
         .topbar-dropdown-menu {
             background: rgba(18, 20, 29, 0.95) !important;
@@ -309,6 +353,12 @@ $name = $_SESSION['user_name'] ?? 'User';
                 margin-left: 0;
                 padding: 15px;
             }
+            .topbar-search-box {
+                width: 180px;
+            }
+            .topbar-search-box:focus-within {
+                width: 200px;
+            }
         }
     </style>
 </head>
@@ -372,14 +422,28 @@ $name = $_SESSION['user_name'] ?? 'User';
 
     <!-- MAIN CONTENT AREA -->
     <main class="main-content">
-        <!-- Top Navbar with Language Switcher & Notification -->
-        <div class="top-navbar d-flex align-items-center justify-content-between mb-4">
-            <button class="btn btn-dark d-lg-none border-secondary" type="button" id="sidebarToggle">
-                <i class="fa-solid fa-bars"></i>
-            </button>
+        <!-- Top Navbar with Search, Live Clock, Language Switcher & Notification -->
+        <div class="top-navbar d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <button class="btn btn-dark d-lg-none border-secondary" type="button" id="sidebarToggle">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+
+                <!-- TOPBAR SEARCH BAR -->
+                <!-- <div class="topbar-search-box d-flex align-items-center gap-2">
+                    <i class="fa-solid fa-magnifying-glass text-secondary"></i>
+                    <input type="text" placeholder="<?= $t['search_ph'] ?>" id="topbarSearchInput">
+                </div> -->
+            </div>
 
             <div class="ms-auto d-flex align-items-center gap-3">
                 
+                <!-- LIVE DIGITAL CLOCK WIDGET -->
+                <!-- <div class="topbar-clock d-none d-md-flex">
+                    <i class="fa-regular fa-clock text-warning"></i>
+                    <span id="liveClock">00:00:00 AM</span>
+                </div> -->
+
                 <!-- LANGUAGE SWITCHER DROPDOWN -->
                 <div class="dropdown">
                     <button class="btn btn-dark border-secondary border-opacity-25 rounded-3 px-3 py-2 d-flex align-items-center gap-2 small" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="background: rgba(255,255,255,0.05);">
@@ -458,7 +522,7 @@ $name = $_SESSION['user_name'] ?? 'User';
                 </div>
 
                 <!-- Status Indicator -->
-                <div class="d-none d-sm-flex align-items-center gap-2 bg-dark bg-opacity-50 px-3 py-2 rounded-3 border border-secondary border-opacity-10">
+                <div class="d-none d-xl-flex align-items-center gap-2 bg-dark bg-opacity-50 px-3 py-2 rounded-3 border border-secondary border-opacity-10">
                     <i class="fa-solid fa-circle text-success" style="font-size: 8px;"></i>
                     <span class="text-secondary small" style="font-size: 0.75rem;"><?= $t['system_live'] ?></span>
                 </div>
@@ -468,6 +532,7 @@ $name = $_SESSION['user_name'] ?? 'User';
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Sidebar Mobile Toggle
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
 
@@ -476,5 +541,26 @@ document.addEventListener('DOMContentLoaded', function () {
             sidebar.classList.toggle('show');
         });
     }
+
+    // Realtime Digital Clock Engine
+    function updateClock() {
+        const now = new Date();
+        let hours = now.getHours();
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+
+        hours = hours % 12;
+        hours = hours ? hours : 12; // 0 hour is converted to 12
+        const formattedHours = String(hours).padStart(2, '0');
+
+        const clockEl = document.getElementById('liveClock');
+        if (clockEl) {
+            clockEl.textContent = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
+        }
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock(); // Initial Trigger
 });
 </script>
