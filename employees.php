@@ -1,10 +1,13 @@
 <?php 
 require_once 'config/db.php';
-include_once 'includes/header.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
 $role = $_SESSION['user_role'] ?? 'Employee';
-$msg = "";
 
+// Handle POST Requests with PRG Pattern
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['action']) && $_POST['action'] === 'add') {
         $first_name = trim($_POST['first_name']);
@@ -17,7 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $conn->prepare("INSERT INTO employees (first_name, last_name, email, salary, dept_id, hire_date) VALUES (?, ?, ?, ?, ?, ?)");
         $stmt->bind_param("sssdis", $first_name, $last_name, $email, $salary, $dept_id, $hire_date);
         $stmt->execute();
-        $msg = "Employee registered successfully!";
+        $_SESSION['flash_msg'] = "Employee registered successfully!";
+
     } elseif (isset($_POST['action']) && $_POST['action'] === 'edit') {
         $id         = (int)$_POST['id'];
         $first_name = trim($_POST['first_name']);
@@ -30,30 +34,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt = $conn->prepare("UPDATE employees SET first_name = ?, last_name = ?, email = ?, salary = ?, dept_id = ?, hire_date = ? WHERE id = ?");
         $stmt->bind_param("sssdisi", $first_name, $last_name, $email, $salary, $dept_id, $hire_date, $id);
         $stmt->execute();
-        $msg = "Employee record updated successfully!";
+        $_SESSION['flash_msg'] = "Employee record updated successfully!";
+
     } elseif (isset($_POST['action']) && $_POST['action'] === 'soft_delete') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("UPDATE employees SET is_deleted = 1 WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $msg = "Employee deleted!";
-    } elseif (isset($_POST['action']) && $_POST['action'] === 'hard_delete' && $role === 'Admin') {
-        $id = (int)$_POST['id'];
-        $stmt = $conn->prepare("DELETE FROM employees WHERE id = ?");
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-        $msg = "Employee permanently deleted!";
+        $_SESSION['flash_msg'] = "Employee deleted!";
+
     } elseif (isset($_POST['action']) && $_POST['action'] === 'restore' && $role === 'Admin') {
         $id = (int)$_POST['id'];
         $stmt = $conn->prepare("UPDATE employees SET is_deleted = 0 WHERE id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
-        $msg = "Employee restored successfully!";
+        $_SESSION['flash_msg'] = "Employee restored successfully!";
     }
+
+    // Redirect to self to prevent form resubmission
+    header("Location: employees.php");
+    exit;
 }
 
+// Flash Message Handling
+$msg = $_SESSION['flash_msg'] ?? '';
+unset($_SESSION['flash_msg']);
+
 // Fetch active departments for Add & Edit forms
-$departments = $conn->query("SELECT * FROM departments WHERE is_deleted = 0");
+$departments = $conn->query("SELECT * FROM departments WHERE is_deleted = 0 ORDER BY dept_name ASC");
 $dept_list = [];
 while ($d = $departments->fetch_assoc()) {
     $dept_list[] = $d;
@@ -65,114 +73,231 @@ if ($role === 'Admin') {
 } else {
     $employees = $conn->query("SELECT e.*, d.dept_name FROM employees e JOIN departments d ON e.dept_id = d.id WHERE e.is_deleted = 0 ORDER BY e.id DESC");
 }
+
+include_once 'includes/header.php';
 ?>
 
+<!-- Custom Styling for Dark Inputs, Tables and Backdrop Fix -->
+<style>
+    .form-control, .form-select {
+        background-color: rgba(255, 255, 255, 0.05) !important;
+        border: 1px solid rgba(255, 255, 255, 0.12) !important;
+        color: #ffffff !important;
+        border-radius: 8px;
+        padding: 8px 12px;
+    }
+    .form-control:focus, .form-select:focus {
+        background-color: rgba(255, 255, 255, 0.08) !important;
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.25) !important;
+    }
+    .form-select option {
+        background-color: #1e293b;
+        color: #ffffff;
+    }
+    .form-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #cbd5e1;
+    }
+
+    /* Force Remove Backdrop overlay issue */
+    .modal-backdrop {
+        display: none !important;
+    }
+
+    /* Modal Styling with Built-in Dimmed Background */
+    .modal {
+        background: rgba(0, 0, 0, 0.75) !important;
+    }
+    .modal-content {
+        background: #0f172a !important;
+        border: 1px solid rgba(255, 255, 255, 0.15) !important;
+        border-radius: 14px;
+        color: #ffffff !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .modal-header, .modal-footer {
+        border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    /* Custom Dark Table Styles */
+    .table-dark-custom {
+        color: #ffffff !important;
+        margin-bottom: 0;
+        background-color: transparent !important;
+    }
+    .table-dark-custom th {
+        background: rgba(255, 255, 255, 0.05) !important;
+        color: #94a3b8 !important;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+        padding: 12px 16px;
+    }
+    .table-dark-custom td {
+        background-color: transparent !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 12px 16px;
+        vertical-align: middle;
+        color: #ffffff !important;
+    }
+
+    /* Turn Off White Hover Completely */
+    .table-dark-custom tbody tr,
+    .table-dark-custom tbody tr:hover,
+    .table-dark-custom tbody tr td,
+    .table-dark-custom tbody tr:hover td {
+        background-color: transparent !important;
+        background: transparent !important;
+        color: #ffffff !important;
+        --bs-table-accent-bg: transparent !important;
+        --bs-table-hover-bg: transparent !important;
+        --bs-table-bg: transparent !important;
+    }
+
+    /* Subtile Smooth Hover */
+    .table-dark-custom tbody tr:hover td {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+    }
+</style>
+
+<!-- Alert Message -->
 <?php if ($msg): ?>
-    <div class="alert alert-info alert-dismissible fade show"><?= $msg ?><button class="btn-close" data-bs-dismiss="alert"></button></div>
+    <div class="alert alert-success bg-success bg-opacity-25 border border-success text-white alert-dismissible fade show rounded-3 mb-4" role="alert">
+        <i class="fa-solid fa-circle-check me-2 text-success"></i><?= htmlspecialchars($msg) ?>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 <?php endif; ?>
 
-<div class="row">
-    <div class="col-md-4 mb-4">
-        <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white">Add Employee</div>
+<div class="row g-4">
+    <!-- Add Employee Form -->
+    <div class="col-md-4">
+        <div class="card bg-dark text-white border border-secondary border-opacity-25 shadow-sm rounded-3">
+            <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 fw-bold text-white py-3">
+                <i class="fa-solid fa-user-plus me-2 text-primary"></i>Add Employee
+            </div>
             <div class="card-body">
                 <form method="POST">
                     <input type="hidden" name="action" value="add">
-                    <div class="mb-2">
-                        <label class="form-label">First Name</label>
-                        <input type="text" name="first_name" class="form-control" required>
+                    
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" name="first_name" class="form-control" required placeholder="John">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" name="last_name" class="form-control" required placeholder="Doe">
+                        </div>
                     </div>
-                    <div class="mb-2">
-                        <label class="form-label">Last Name</label>
-                        <input type="text" name="last_name" class="form-control" required>
-                    </div>
+
                     <div class="mb-2">
                         <label class="form-label">Email</label>
-                        <input type="email" name="email" class="form-control" required>
+                        <input type="email" name="email" class="form-control" required placeholder="john@example.com">
                     </div>
+
                     <div class="mb-2">
                         <label class="form-label">Salary</label>
-                        <input type="number" step="0.01" name="salary" class="form-control" required>
+                        <input type="number" step="0.01" name="salary" class="form-control" required placeholder="50000">
                     </div>
+
                     <div class="mb-2">
                         <label class="form-label">Department</label>
                         <select name="dept_id" class="form-select" required>
-                            <option value="">Select Dept</option>
+                            <option value="">-- Select Dept --</option>
                             <?php foreach ($dept_list as $d): ?>
                                 <option value="<?= $d['id'] ?>"><?= htmlspecialchars($d['dept_name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div class="mb-3">
+
+                    <div class="mb-4">
                         <label class="form-label">Hire Date</label>
                         <input type="date" name="hire_date" value="<?= date('Y-m-d') ?>" class="form-control" required>
                     </div>
-                    <button class="btn btn-primary w-100">Submit</button>
+
+                    <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                        <i class="fa-solid fa-check me-1"></i> Register Employee
+                    </button>
                 </form>
             </div>
         </div>
     </div>
 
+    <!-- Employee Directory Table -->
     <div class="col-md-8">
-        <div class="card shadow-sm">
-            <div class="card-header bg-dark text-white">Employee Records</div>
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
+        <div class="card bg-dark text-white border border-secondary border-opacity-25 shadow-sm rounded-3 overflow-hidden">
+            <div class="card-header bg-transparent border-bottom border-secondary border-opacity-25 fw-bold text-white py-3">
+                <i class="fa-solid fa-users me-2 text-info"></i>Employee Records
+            </div>
+            <div class="table-responsive">
+                <table class="table table-dark-custom align-middle">
                     <thead>
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
                             <th>Dept</th>
                             <th>Salary</th>
-                            <th>Action</th>
+                            <th class="text-end">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php while ($e = $employees->fetch_assoc()): ?>
-                        <tr class="<?= $e['is_deleted'] ? 'table-danger' : '' ?>">
-                            <td><?= htmlspecialchars($e['first_name'] . ' ' . $e['last_name']) ?></td>
-                            <td><?= htmlspecialchars($e['email']) ?></td>
-                            <td><span class="badge bg-secondary"><?= htmlspecialchars($e['dept_name']) ?></span></td>
-                            <td>$<?= number_format($e['salary'], 2) ?></td>
-                            <td>
-                                <?php if (!$e['is_deleted']): ?>
-                                    <!-- Edit Button (Triggers Modal) -->
-                                    <button type="button" 
-                                            class="btn btn-sm btn-outline-primary edit-btn" 
-                                            data-id="<?= $e['id'] ?>"
-                                            data-fname="<?= htmlspecialchars($e['first_name'], ENT_QUOTES) ?>"
-                                            data-lname="<?= htmlspecialchars($e['last_name'], ENT_QUOTES) ?>"
-                                            data-email="<?= htmlspecialchars($e['email'], ENT_QUOTES) ?>"
-                                            data-salary="<?= $e['salary'] ?>"
-                                            data-dept="<?= $e['dept_id'] ?>"
-                                            data-hire="<?= $e['hire_date'] ?>"
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#editEmployeeModal">
-                                        Edit
-                                    </button>
+                        <?php if ($employees && $employees->num_rows > 0): ?>
+                            <?php while ($e = $employees->fetch_assoc()): ?>
+                            <tr class="<?= $e['is_deleted'] ? 'opacity-50' : '' ?>">
+                                <td class="fw-semibold text-white">
+                                    <?= htmlspecialchars($e['first_name'] . ' ' . $e['last_name']) ?>
+                                </td>
+                                <td class="text-secondary"><?= htmlspecialchars($e['email']) ?></td>
+                                <td>
+                                    <span class="badge bg-secondary bg-opacity-25 text-info border border-info border-opacity-25 px-2 py-1">
+                                        <?= htmlspecialchars($e['dept_name']) ?>
+                                    </span>
+                                </td>
+                                <td class="fw-bold text-white">$<?= number_format($e['salary'], 2) ?></td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-1">
+                                        <?php if (!$e['is_deleted']): ?>
+                                            <!-- Edit Button -->
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-info edit-btn" 
+                                                    data-id="<?= $e['id'] ?>"
+                                                    data-fname="<?= htmlspecialchars($e['first_name'], ENT_QUOTES) ?>"
+                                                    data-lname="<?= htmlspecialchars($e['last_name'], ENT_QUOTES) ?>"
+                                                    data-email="<?= htmlspecialchars($e['email'], ENT_QUOTES) ?>"
+                                                    data-salary="<?= $e['salary'] ?>"
+                                                    data-dept="<?= $e['dept_id'] ?>"
+                                                    data-hire="<?= $e['hire_date'] ?>">
+                                                Edit
+                                            </button>
 
-                                    <form method="POST" style="display:inline;">
-                                        <input type="hidden" name="action" value="soft_delete">
-                                        <input type="hidden" name="id" value="<?= $e['id'] ?>">
-                                        <button class="btn btn-sm btn-outline-warning">Delete</button>
-                                    </form>
-                                <?php endif; ?>
+                                            <!-- Soft Delete Form -->
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="action" value="soft_delete">
+                                                <input type="hidden" name="id" value="<?= $e['id'] ?>">
+                                                <button class="btn btn-sm btn-outline-warning">Delete</button>
+                                            </form>
+                                        <?php endif; ?>
 
-                                <?php if ($role === 'Admin' && $e['is_deleted']): ?>
-                                    <form method="POST" style="display:inline;">
-                                        <input type="hidden" name="action" value="restore">
-                                        <input type="hidden" name="id" value="<?= $e['id'] ?>">
-                                        <button class="btn btn-sm btn-outline-success">Restore</button>
-                                    </form>
-                                    <form method="POST" style="display:inline;" onsubmit="return confirm('PERMANENTLY delete employee record?');">
-                                        <input type="hidden" name="action" value="hard_delete">
-                                        <input type="hidden" name="id" value="<?= $e['id'] ?>">
-                                        <button class="btn btn-sm btn-danger">Hard Delete</button>
-                                    </form>
-                                <?php endif; ?>
-                            </td>
-                        </tr>
-                        <?php endwhile; ?>
+                                        <?php if ($role === 'Admin' && $e['is_deleted']): ?>
+                                            <!-- Restore Form -->
+                                            <form method="POST" style="display:inline;">
+                                                <input type="hidden" name="action" value="restore">
+                                                <input type="hidden" name="id" value="<?= $e['id'] ?>">
+                                                <button class="btn btn-sm btn-outline-success">Restore</button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
+                            <?php endwhile; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-secondary">No employee records found.</td>
+                            </tr>
+                        <?php endif; ?>
                     </tbody>
                 </table>
             </div>
@@ -182,33 +307,40 @@ if ($role === 'Admin') {
 
 <!-- Edit Employee Modal -->
 <div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-            <div class="modal-header bg-dark text-white">
-                <h5 class="modal-title" id="editEmployeeModalLabel">Edit Employee Record</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-white" id="editEmployeeModalLabel">
+                    <i class="fa-solid fa-user-pen text-info me-2"></i>Edit Employee Record
+                </h5>
+                <button type="button" class="btn-close btn-close-white closeModal" aria-label="Close"></button>
             </div>
             <form method="POST">
                 <div class="modal-body">
                     <input type="hidden" name="action" value="edit">
                     <input type="hidden" name="id" id="edit_emp_id">
                     
-                    <div class="mb-2">
-                        <label class="form-label">First Name</label>
-                        <input type="text" name="first_name" id="edit_first_name" class="form-control" required>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label">First Name</label>
+                            <input type="text" name="first_name" id="edit_first_name" class="form-control" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" name="last_name" id="edit_last_name" class="form-control" required>
+                        </div>
                     </div>
-                    <div class="mb-2">
-                        <label class="form-label">Last Name</label>
-                        <input type="text" name="last_name" id="edit_last_name" class="form-control" required>
-                    </div>
+
                     <div class="mb-2">
                         <label class="form-label">Email</label>
                         <input type="email" name="email" id="edit_email" class="form-control" required>
                     </div>
+
                     <div class="mb-2">
                         <label class="form-label">Salary</label>
                         <input type="number" step="0.01" name="salary" id="edit_salary" class="form-control" required>
                     </div>
+
                     <div class="mb-2">
                         <label class="form-label">Department</label>
                         <select name="dept_id" id="edit_dept_id" class="form-select" required>
@@ -218,27 +350,42 @@ if ($role === 'Admin') {
                             <?php endforeach; ?>
                         </select>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Hire Date</label>
                         <input type="date" name="hire_date" id="edit_hire_date" class="form-control" required>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update Employee</button>
+                    <button type="button" class="btn btn-secondary btn-sm closeModal">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3">Update Record</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- JavaScript to populate Employee Modal Data -->
+<!-- Standalone JavaScript Modal Handler -->
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    const editButtons = document.querySelectorAll('.edit-btn');
-    
-    editButtons.forEach(button => {
-        button.addEventListener('click', function () {
+    const modalEl = document.getElementById('editEmployeeModal');
+
+    function showModal() {
+        modalEl.style.display = 'block';
+        modalEl.classList.add('show');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function hideModal() {
+        modalEl.style.display = 'none';
+        modalEl.classList.remove('show');
+        document.body.style.overflow = 'auto';
+    }
+
+    // Populate and open Modal
+    const editBtns = document.querySelectorAll('.edit-btn');
+    editBtns.forEach(btn => {
+        btn.addEventListener('click', function () {
             document.getElementById('edit_emp_id').value     = this.getAttribute('data-id');
             document.getElementById('edit_first_name').value = this.getAttribute('data-fname');
             document.getElementById('edit_last_name').value  = this.getAttribute('data-lname');
@@ -246,7 +393,22 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_salary').value     = this.getAttribute('data-salary');
             document.getElementById('edit_dept_id').value    = this.getAttribute('data-dept');
             document.getElementById('edit_hire_date').value  = this.getAttribute('data-hire');
+
+            showModal();
         });
+    });
+
+    // Close Modal via Cancel or Cross 'X' Button
+    const closeBtns = document.querySelectorAll('.closeModal');
+    closeBtns.forEach(btn => {
+        btn.addEventListener('click', hideModal);
+    });
+
+    // Close Modal when clicking backdrop area
+    window.addEventListener('click', function (e) {
+        if (e.target === modalEl) {
+            hideModal();
+        }
     });
 });
 </script>
