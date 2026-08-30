@@ -13,6 +13,18 @@ A university-level Database Management Systems (DBMS) project. This repository f
 
 ---
 
+## 🚀 Key Features & Functionality
+
+* **Advanced Account Management (CRUD & Soft Delete):** 
+  * **Soft Delete / Trash:** Safely move user records and system entries to a trash state without losing critical relational history.
+  * **Restore Feature:** Instantly recover and restore soft-deleted user accounts back to active operational status.
+  * **Permanent Delete:** Full administrative privileges to completely purge and remove records permanently from the database.
+* **Solid Sidebar & Navigation System:** Isolated backdrop filters to prevent blur bleed, ensuring smooth mobile sidebar toggle actions with a solid dark UI theme (`#0d0f18`).
+* **Bilingual UI Support:** Seamless switching capabilities between English and Bengali across key system modules.
+* **Role-Based Access Control (RBAC):** Granular permission controls partitioned across System Admin, Department Managers, and Employee Staff.
+
+---
+
 ## 🔑 Default Credentials & Access Roles
 
 All initial seed accounts are populated automatically upon first launch.
@@ -38,6 +50,7 @@ System login accounts and access roles.
 - `email` (VARCHAR(100), NOT NULL, UNIQUE)
 - `password` (VARCHAR(255), NOT NULL) — BCRYPT Hashed
 - `role` (ENUM('Admin','Department','Employee'), Default 'Employee')
+- `is_deleted` (TINYINT(1), Default 0) — Soft-delete flag
 - `created_at` (TIMESTAMP)
 
 ### 2. `departments`
@@ -84,7 +97,7 @@ hrms-project/
 ├── index.php            # Main dashboard with card statistics
 ├── login.php            # Login portal with quick-fill demo buttons
 ├── logout.php           # Session cleanup & logout handler
-├── users.php            # System Admin user account management
-├── departments.php      # Department management & soft-delete controls
-├── employees.php        # Employee directory & profile registration
-└── attendance.php       # Attendance tracker and daily logs
+├── users.php            # System Admin user account management (Soft delete, Restore, Perm delete)
+├── departments.php      # Department management & soft-delete controls (Soft delete, Restore, Perm delete)
+├── employees.php        # Employee directory & profile registration (Soft delete, Restore, Perm delete)
+└── attendance.php       # Attendance tracker and daily logs (Soft delete, Restore, Perm delete)
