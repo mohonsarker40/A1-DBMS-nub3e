@@ -70,11 +70,11 @@ $att_trans = [
         'th_employee'       => 'কর্মচারী',
         'th_status'         => 'স্ট্যাটাস',
         'th_action'         => 'অ্যাকশন',
-        'badge_deleted'     => 'মুছে ফেলা হয়েছে',
-        'no_records'        => 'কোনো উপস্থিতির রেকর্ড পাওয়া যায়নি।',
+        'badge_deleted'     => 'মুছে ফেলা হয়েছে',
+        'no_records'        => 'কোনো উপস্থিতির রেকর্ড পাওয়া যায়নি।',
         'modal_title'       => 'উপস্থিতির তথ্য সংশোধন করুন',
         'confirm_trash'     => 'আপনি কি এই উপস্থিতির রেকর্ড ট্র্যাশে পাঠাতে চান?',
-        'confirm_perm'      => 'আপনি কি নিশ্চিতভাবে এই উপস্থিতির তথ্য স্থায়ীভাবে মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না!'
+        'confirm_perm'      => 'আপনি কি নিশ্চিতভাবে এই উপস্থিতির তথ্য স্থায়ীভাবে মুছে ফেলতে চান? এটি আর ফিরিয়ে আনা যাবে না!'
     ]
 ];
 
@@ -134,6 +134,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // Flash Message Handling
 $msg = $_SESSION['flash_msg'] ?? '';
 unset($_SESSION['flash_msg']);
+
+// Set Bangladesh Timezone for Default Date & Time
+date_default_timezone_set('Asia/Dhaka');
 
 // Fetch active employees
 $employees = $conn->query("SELECT id, first_name, last_name FROM employees WHERE is_deleted = 0 ORDER BY first_name ASC");
@@ -271,12 +274,12 @@ include_once 'includes/header.php';
 
                     <div class="mb-3">
                         <label class="form-label"><?= $at['label_date'] ?></label>
-                        <input type="date" name="log_date" value="<?= date('Y-m-d') ?>" class="form-control" required>
+                        <input type="date" name="log_date" value="2026-08-30" class="form-control" required>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label"><?= $at['label_time'] ?></label>
-                        <input type="time" name="log_time" value="<?= date('H:i') ?>" class="form-control" required>
+                        <input type="time" name="log_time" value="16:16" class="form-control" required>
                     </div>
 
                     <div class="mb-4">
@@ -488,4 +491,4 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-<?php include_once 'includes/footer.php'; ?>
+<?php include_once 'includes/footer.php'; ?> 
