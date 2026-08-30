@@ -491,4 +491,4 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-<?php include_once 'includes/footer.php'; ?>
+<?php include_once 'includes/footer.php'; ?> 
