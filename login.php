@@ -8,7 +8,7 @@ $db_path = __DIR__ . '/config/db.php';
 if (!file_exists($db_path)) {
     die("<div style='color:red;'>Database config file missing!</div>");
 }
-require_once $db_path;
+require_once $db_path; 
 
 if (isset($_SESSION['user_id'])) {
     header("Location: index.php");
