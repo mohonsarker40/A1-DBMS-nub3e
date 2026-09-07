@@ -27,7 +27,8 @@ A university-level Database Management Systems (DBMS) project. This repository f
 
 ## 🔑 Default Credentials & Access Roles
 
-All initial seed accounts are populated automatically upon first launch.
+All initial seed accounts are populated automatically upon first launch.<br>
+- Database name: `hrms_db`
 
 | Role | Email | Password | Access Privileges |
 | :--- | :--- | :--- | :--- |
