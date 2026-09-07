@@ -9,7 +9,7 @@ A university-level Database Management Systems (DBMS) project. This repository f
 * **Database Engine:** MySQL 8.0+ (3NF Relational Architecture)
 * **Backend Application:** PHP 8.x
 * **Frontend UI:** HTML5, CSS3, Bootstrap 5
-* **Authentication:** Session-based RBAC with BCRYPT password encryption
+* **Authentication:** Session-based RBAC with BCRYPT password encryption 
 
 ---
 
